@@ -1,0 +1,394 @@
+{% extends 'relations/base.html' %}
+
+{% block title %}Mes Relations{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Statistiques -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.total_amis }}</div>
+            <div class="stat-label">
+                <i class="fas fa-heart"></i> Amis
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.demandes_en_attente }}</div>
+            <div class="stat-label">
+                <i class="fas fa-clock"></i> En attente
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.demandes_envoyees }}</div>
+            <div class="stat-label">
+                <i class="fas fa-paper-plane"></i> Envoyées
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ notifications_non_lues }}</div>
+            <div class="stat-label">
+                <i class="fas fa-bell"></i> Notifications
+            </div>
+        </div>
+    </div>
+
+    <!-- Demandes reçues -->
+    {% if demandes_recues %}
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-inbox"></i>
+            Demandes d'amitié reçues ({{ demandes_recues.count }})
+        </div>
+        <div class="card-body">
+            <div class="user-grid">
+                {% for demande in demandes_recues %}
+                <div class="user-card">
+                    <div class="user-header">
+                        <div class="user-avatar">
+                            {% if demande.expediteur.photo %}
+                                <img src="{{ demande.expediteur.photo.url }}" alt="{{ demande.expediteur.prenom }}">
+                            {% else %}
+                                {{ demande.expediteur.prenom.0 }}{{ demande.expediteur.nom.0 }}
+                            {% endif %}
+                        </div>
+                        <div class="user-info">
+                            <h4>{{ demande.expediteur.prenom }} {{ demande.expediteur.nom }}</h4>
+                            <p>@{{ demande.expediteur.utilisateur.username }}</p>
+                        </div>
+                    </div>
+                    <div class="user-meta">
+                        <span><i class="fas fa-university"></i> {{ demande.expediteur.universite.nom|default:"Non spécifié" }}</span>
+                        <span><i class="fas fa-graduation-cap"></i> {{ demande.expediteur.filiere.nom|default:"Non spécifié" }}</span>
+                    </div>
+                    <div class="user-actions">
+                        <form method="post" action="{% url 'relations:repondre' demande.id 'accepter' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check"></i> Accepter
+                            </button>
+                        </form>
+                        <form method="post" action="{% url 'relations:repondre' demande.id 'refuser' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-times"></i> Refuser
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Mes amis -->
+    {% if amis %}
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-users"></i>
+            Mes amis ({{ amis|length }})
+        </div>
+        <div class="card-body">
+            <div class="user-grid">
+                {% for ami in amis %}
+                <div class="user-card">
+                    <div class="user-header">
+                        <div class="user-avatar">
+                            {% if ami.photo %}
+                                <img src="{{ ami.photo.url }}" alt="{{ ami.prenom }}">
+                            {% else %}
+                                {{ ami.prenom.0 }}{{ ami.nom.0 }}
+                            {% endif %}
+                        </div>
+                        <div class="user-info">
+                            <h4>{{ ami.prenom }} {{ ami.nom }}</h4>
+                            <p>@{{ ami.utilisateur.username }}</p>
+                        </div>
+                    </div>
+                    <div class="user-meta">
+                        <span><i class="fas fa-university"></i> {{ ami.universite.nom|default:"Non spécifié" }}</span>
+                        <span><i class="fas fa-graduation-cap"></i> {{ ami.filiere.nom|default:"Non spécifié" }}</span>
+                    </div>
+                    <div class="user-actions">
+                        <a href="{% url 'messagerie:start_conversation' ami.id %}" class="btn btn-primary">
+                            <i class="fas fa-comment"></i> Message
+                        </a>
+                        <button type="button" class="btn btn-secondary" onclick="showProfileModal({{ ami.id }})">
+                            <i class="fas fa-eye"></i> Profil
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Barre de recherche et filtres -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-search"></i>
+            Trouver de nouveaux amis
+        </div>
+        <div class="card-body">
+            <div class="search-filter-bar">
+                <input type="text" class="search-input" placeholder="Rechercher par nom..." 
+                       value="{{ search_query }}" id="searchInput">
+                
+                <select class="filter-select" id="universiteFilter">
+                    <option value="">Toutes les universités</option>
+                    {% for universite in universites %}
+                        <option value="{{ universite.id }}" 
+                                {% if universite_filter == universite.id|stringformat:"s" %}selected{% endif %}>
+                            {{ universite.nom }}
+                        </option>
+                    {% endfor %}
+                </select>
+                
+                <select class="filter-select" id="filiereFilter">
+                    <option value="">Toutes les filières</option>
+                    {% for filiere in filieres %}
+                        <option value="{{ filiere.id }}"
+                                {% if filiere_filter == filiere.id|stringformat:"s" %}selected{% endif %}>
+                            {{ filiere.nom }}
+                        </option>
+                    {% endfor %}
+                </select>
+                
+                <button type="button" class="btn btn-primary" onclick="applySuggestionFilters()">
+                    <i class="fas fa-filter"></i> Filtrer
+                </button>
+            </div>
+
+            <!-- Suggestions -->
+            <div id="suggestionsContainer">
+                {% if suggestions %}
+                    <div class="user-grid">
+                        {% for etudiant in suggestions %}
+                        <div class="user-card">
+                            <div class="user-header">
+                                <div class="user-avatar">
+                                    {% if etudiant.photo %}
+                                        <img src="{{ etudiant.photo.url }}" alt="{{ etudiant.prenom }}">
+                                    {% else %}
+                                        {{ etudiant.prenom.0 }}{{ etudiant.nom.0 }}
+                                    {% endif %}
+                                </div>
+                                <div class="user-info">
+                                    <h4>{{ etudiant.prenom }} {{ etudiant.nom }}</h4>
+                                    <p>@{{ etudiant.utilisateur.username }}</p>
+                                </div>
+                            </div>
+                            <div class="user-meta">
+                                <span><i class="fas fa-university"></i> {{ etudiant.universite.nom|default:"Non spécifié" }}</span>
+                                <span><i class="fas fa-graduation-cap"></i> {{ etudiant.filiere.nom|default:"Non spécifié" }}</span>
+                            </div>
+                            <div class="user-actions">
+                                <button type="button" class="btn btn-primary" 
+                                        onclick="envoyerDemande({{ etudiant.id }}, this)">
+                                    <i class="fas fa-user-plus"></i> Ajouter
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if suggestions.has_other_pages %}
+                    <div class="pagination">
+                        {% if suggestions.has_previous %}
+                            <a href="?page={{ suggestions.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if universite_filter %}&universite={{ universite_filter }}{% endif %}{% if filiere_filter %}&filiere={{ filiere_filter }}{% endif %}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        {% endif %}
+
+                        {% for num in suggestions.paginator.page_range %}
+                            {% if suggestions.number == num %}
+                                <span class="current">{{ num }}</span>
+                            {% else %}
+                                <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if universite_filter %}&universite={{ universite_filter }}{% endif %}{% if filiere_filter %}&filiere={{ filiere_filter }}{% endif %}">{{ num }}</a>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if suggestions.has_next %}
+                            <a href="?page={{ suggestions.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if universite_filter %}&universite={{ universite_filter }}{% endif %}{% if filiere_filter %}&filiere={{ filiere_filter }}{% endif %}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-user-friends"></i>
+                        <h3>Aucune suggestion trouvée</h3>
+                        <p>Essayez de modifier vos critères de recherche</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal profil -->
+<div id="profileModal" class="modal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3>Profil utilisateur</h3>
+            <button onclick="closeProfileModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">×</button>
+        </div>
+        <div id="profileContent">
+            <!-- Contenu chargé dynamiquement -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Envoyer une demande d'amitié
+function envoyerDemande(destinataireId, button) {
+    const originalText = button.innerHTML;
+    button.innerHTML = '<span class="loading"></span> Envoi...';
+    button.disabled = true;
+
+    $.ajax({
+        url: '{% url "relations:ajax_envoyer_demande" %}',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        data: JSON.stringify({
+            destinataire_id: destinataireId
+        }),
+        success: function(response) {
+            if (response.success) {
+                showToast(response.message, 'success');
+                button.innerHTML = '<i class="fas fa-check"></i> Envoyée';
+                button.classList.remove('btn-primary');
+                button.classList.add('btn-secondary');
+            } else {
+                showToast(response.message, 'error');
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        },
+        error: function() {
+            showToast('Erreur lors de l\'envoi de la demande', 'error');
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+    });
+}
+
+// Appliquer les filtres de suggestions
+function applySuggestionFilters() {
+    const search = $('#searchInput').val();
+    const universite = $('#universiteFilter').val();
+    const filiere = $('#filiereFilter').val();
+    
+    let url = '{% url "relations:ajax_suggestions" %}?';
+    const params = [];
+    
+    if (search) params.push(`search=${encodeURIComponent(search)}`);
+    if (universite) params.push(`universite=${universite}`);
+    if (filiere) params.push(`filiere=${filiere}`);
+    
+    url += params.join('&');
+    
+    $('#suggestionsContainer').html('<div style="text-align: center; padding: 2rem;"><span class="loading"></span> Recherche en cours...</div>');
+    
+    $.get(url, function(response) {
+        if (response.success) {
+            updateSuggestionsDisplay(response.suggestions);
+        } else {
+            showToast('Erreur lors de la recherche', 'error');
+        }
+    });
+}
+
+// Mettre à jour l'affichage des suggestions
+function updateSuggestionsDisplay(suggestions) {
+    let html = '';
+    
+    if (suggestions.length > 0) {
+        html = '<div class="user-grid">';
+        suggestions.forEach(function(etudiant) {
+            html += `
+                <div class="user-card">
+                    <div class="user-header">
+                        <div class="user-avatar">
+                            ${etudiant.photo_url ? 
+                                `<img src="${etudiant.photo_url}" alt="${etudiant.nom}">` : 
+                                `${etudiant.nom.charAt(0)}`
+                            }
+                        </div>
+                        <div class="user-info">
+                            <h4>${etudiant.nom}</h4>
+                            <p>@${etudiant.username}</p>
+                        </div>
+                    </div>
+                    <div class="user-meta">
+                        <span><i class="fas fa-university"></i> ${etudiant.universite || 'Non spécifié'}</span>
+                        <span><i class="fas fa-graduation-cap"></i> ${etudiant.filiere || 'Non spécifié'}</span>
+                    </div>
+                    <div class="user-actions">
+                        <button type="button" class="btn btn-primary" onclick="envoyerDemande(${etudiant.id}, this)">
+                            <i class="fas fa-user-plus"></i> Ajouter
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+    } else {
+        html = `
+            <div class="empty-state">
+                <i class="fas fa-user-friends"></i>
+                <h3>Aucune suggestion trouvée</h3>
+                <p>Essayez de modifier vos critères de recherche</p>
+            </div>
+        `;
+    }
+    
+    $('#suggestionsContainer').html(html);
+}
+
+// Recherche en temps réel
+let searchTimeout;
+$('#searchInput').on('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(applySuggestionFilters, 500);
+});
+
+// Modal profil
+function showProfileModal(userId) {
+    $('#profileModal').fadeIn();
+    $('#profileContent').html('<div style="text-align: center; padding: 2rem;"><span class="loading"></span> Chargement...</div>');
+    
+    // Ici vous pouvez charger les détails du profil via AJAX
+    // Pour l'instant, affichage basique
+    setTimeout(() => {
+        $('#profileContent').html(`
+            <div style="text-align: center;">
+                <div class="user-avatar" style="width: 100px; height: 100px; margin: 0 auto 1rem;">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h4>Profil utilisateur #${userId}</h4>
+                <p>Fonctionnalité en cours de développement</p>
+            </div>
+        `);
+    }, 1000);
+}
+
+function closeProfileModal() {
+    $('#profileModal').fadeOut();
+}
+
+// Fermer modal en cliquant à l'extérieur
+$(document).on('click', '.modal', function(e) {
+    if (e.target === this) {
+        closeProfileModal();
+    }
+});
+</script>
+{% endblock %}

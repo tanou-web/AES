@@ -1,0 +1,376 @@
+{% extends 'base.html' %}
+
+{% block title %}Statistiques{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Statistiques générales -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-chart-line"></i>
+            Statistiques générales
+        </div>
+        <div class="card-body">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">{{ stats.total_amis }}</div>
+                    <div class="stat-label">
+                        <i class="fas fa-users"></i> Amis total
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ stats.demandes_recues }}</div>
+                    <div class="stat-label">
+                        <i class="fas fa-inbox"></i> Demandes reçues
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ stats.demandes_envoyees }}</div>
+                    <div class="stat-label">
+                        <i class="fas fa-paper-plane"></i> Demandes envoyées
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ stats.demandes_refusees }}</div>
+                    <div class="stat-label">
+                        <i class="fas fa-times-circle"></i> Demandes refusées
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ stats.utilisateurs_bloques }}</div>
+                    <div class="stat-label">
+                        <i class="fas fa-ban"></i> Utilisateurs bloqués
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Répartition par université -->
+    {% if stats_universite %}
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-university"></i>
+            Répartition par université
+        </div>
+        <div class="card-body">
+            <div class="chart-container">
+                <canvas id="universiteChart"></canvas>
+            </div>
+            <div class="stats-list">
+                {% for universite, count in stats_universite.items %}
+                    <div class="stat-item">
+                        <span class="stat-label">{{ universite }}</span>
+                        <span class="stat-value">{{ count }} ami{{ count|pluralize }}</span>
+                        <div class="stat-bar">
+                            <div class="stat-progress" style="width: {% widthratio count stats.total_amis 100 %}%"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Répartition par filière -->
+    {% if stats_filiere %}
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-graduation-cap"></i>
+            Répartition par filière
+        </div>
+        <div class="card-body">
+            <div class="chart-container">
+                <canvas id="filiereChart"></canvas>
+            </div>
+            <div class="stats-list">
+                {% for filiere, count in stats_filiere.items %}
+                    <div class="stat-item">
+                        <span class="stat-label">{{ filiere }}</span>
+                        <span class="stat-value">{{ count }} ami{{ count|pluralize }}</span>
+                        <div class="stat-bar">
+                            <div class="stat-progress" style="width: {% widthratio count stats.total_amis 100 %}%"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Graphique temporel -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-chart-area"></i>
+            Évolution du réseau
+        </div>
+        <div class="card-body">
+            <div class="chart-container">
+                <canvas id="evolutionChart"></canvas>
+            </div>
+            <p class="text-center" style="margin-top: 1rem; color: #666;">
+                Évolution du nombre d'amis au fil du temps
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    transform: translateY(0);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    opacity: 0.9;
+    font-size: 1rem;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-bottom: 2rem;
+}
+
+.stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+}
+
+.stat-label {
+    flex: 1;
+    font-weight: 500;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #667eea;
+    min-width: 100px;
+    text-align: right;
+}
+
+.stat-bar {
+    width: 100px;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.stat-progress {
+    height: 100%;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    border-radius: 4px;
+    transition: width 0.8s ease;
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .stat-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .stat-value {
+        min-width: auto;
+        text-align: center;
+    }
+    
+    .chart-container {
+        height: 250px;
+    }
+    
+    .stat-card {
+        padding: 1.5rem;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+// Configuration des couleurs
+const colors = {
+    primary: '#667eea',
+    secondary: '#764ba2',
+    success: '#2ed573',
+    warning: '#ffa502',
+    danger: '#ff4757',
+    info: '#3742fa'
+};
+
+// Graphique des universités
+{% if stats_universite %}
+const universiteCtx = document.getElementById('universiteChart').getContext('2d');
+new Chart(universiteCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [{% for universite in stats_universite.keys %}'{{ universite }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for count in stats_universite.values %}{{ count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: [
+                colors.primary,
+                colors.secondary,
+                colors.success,
+                colors.warning,
+                colors.danger,
+                colors.info
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 20,
+                    usePointStyle: true
+                }
+            }
+        }
+    }
+});
+{% endif %}
+
+// Graphique des filières
+{% if stats_filiere %}
+const filiereCtx = document.getElementById('filiereChart').getContext('2d');
+new Chart(filiereCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for filiere in stats_filiere.keys %}'{{ filiere }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Nombre d\'amis',
+            data: [{% for count in stats_filiere.values %}{{ count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: colors.primary,
+            borderColor: colors.secondary,
+            borderWidth: 1,
+            borderRadius: 5
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+{% endif %}
+
+// Graphique d'évolution (données simulées - à remplacer par de vraies données)
+const evolutionCtx = document.getElementById('evolutionChart').getContext('2d');
+new Chart(evolutionCtx, {
+    type: 'line',
+    data: {
+        labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+        datasets: [{
+            label: 'Nombre d\'amis',
+            data: [0, 2, 5, 8, 12, {{ stats.total_amis }}],
+            borderColor: colors.primary,
+            backgroundColor: colors.primary + '20',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: colors.primary,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        },
+        elements: {
+            point: {
+                hoverRadius: 8
+            }
+        }
+    }
+});
+
+// Animation des barres de progression
+document.addEventListener('DOMContentLoaded', function() {
+    $('.stat-progress').each(function() {
+        const width = $(this).css('width');
+        $(this).css('width', '0').animate({width: width}, 1000);
+    });
+});
+</script>
+{% endblock %}

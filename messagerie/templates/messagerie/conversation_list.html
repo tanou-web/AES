@@ -1,0 +1,546 @@
+{% extends 'messagerie/base.html' %}
+
+{% block title %}Conversations{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="conversations-sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-comments"></i> Messages</h3>
+            <button class="chat-btn mobile-hidden" onclick="toggleFilters()">
+                <i class="fas fa-filter"></i>
+            </button>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="Rechercher une conversation..." 
+                   id="conversationSearch" value="{{ search_query }}">
+        </div>
+        
+        <div class="filter-tabs mobile-hidden" id="filterTabs" style="display: none;">
+            <button class="filter-tab {% if not filter_type or filter_type == 'all' %}active{% endif %}" 
+                    onclick="filterConversations('all')">
+                Toutes
+            </button>
+            <button class="filter-tab {% if filter_type == 'unread' %}active{% endif %}" 
+                    onclick="filterConversations('unread')">
+                Non lues
+            </button>
+            <button class="filter-tab {% if filter_type == 'archived' %}active{% endif %}" 
+                    onclick="filterConversations('archived')">
+                Archivées
+            </button>
+        </div>
+        
+        <!-- Filtres mobiles simplifiés -->
+        <div class="mobile-filters desktop-hidden" style="padding: 0.5rem 1rem; border-bottom: 1px solid #f1f3f4;">
+            <select id="mobileFilter" onchange="filterConversations(this.value)" 
+                    style="width: 100%; padding: 0.5rem; border: 1px solid #e9ecef; border-radius: 8px;">
+                <option value="all" {% if not filter_type or filter_type == 'all' %}selected{% endif %}>
+                    Toutes les conversations
+                </option>
+                <option value="unread" {% if filter_type == 'unread' %}selected{% endif %}>
+                    Messages non lus
+                </option>
+                <option value="archived" {% if filter_type == 'archived' %}selected{% endif %}>
+                    Conversations archivées
+                </option>
+            </select>
+        </div>
+        
+        <div class="conversations-list" id="conversationsList">
+            {% for conv_data in conversations %}
+                <div class="conversation-item" 
+                     data-conversation-id="{{ conv_data.conversation.id }}"
+                     onclick="handleConversationClick('{{ conv_data.conversation.id }}', event)">
+                    <div class="conversation-avatar">
+                        {% if conv_data.other_participant.photo %}
+                            <img src="{{ conv_data.other_participant.photo.url }}" 
+                                 alt="{{ conv_data.other_participant.prenom }}">
+                        {% else %}
+                            {{ conv_data.other_participant.prenom.0 }}{{ conv_data.other_participant.nom.0 }}
+                        {% endif %}
+                        <!-- Indicateur en ligne (optionnel) -->
+                        {% if conv_data.other_participant.is_online %}
+                            <div class="online-indicator"></div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="conversation-info">
+                        <div class="conversation-name">
+                            {{ conv_data.other_participant.prenom }} {{ conv_data.other_participant.nom }}
+                        </div>
+                        <div class="conversation-preview">
+                            {% if conv_data.last_message %}
+                                {% if conv_data.last_message.message_type == 'file' %}
+                                    <i class="fas fa-file"></i> Fichier
+                                {% elif conv_data.last_message.message_type == 'image' %}
+                                    <i class="fas fa-image"></i> Image
+                                {% elif conv_data.last_message.message_type == 'video' %}
+                                    <i class="fas fa-video"></i> Vidéo
+                                {% elif conv_data.last_message.message_type == 'audio' %}
+                                    <i class="fas fa-microphone"></i> Audio
+                                {% elif conv_data.last_message.message_type == 'emoji' %}
+                                    {{ conv_data.last_message.content }}
+                                {% else %}
+                                    {% if conv_data.last_message.sender == user_etudiant %}
+                                        <span style="color: #667eea;">Vous: </span>
+                                    {% endif %}
+                                    {{ conv_data.last_message.content|truncatechars:35 }}
+                                {% endif %}
+                            {% else %}
+                                <span style="color: #999; font-style: italic;">Aucun message</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="conversation-meta">
+                        <div class="conversation-time">
+                            {% if conv_data.last_message %}
+                                {% load humanize %}
+                                {{ conv_data.last_message.created_at|naturaltime }}
+                            {% else %}
+                                {{ conv_data.conversation.created_at|naturaltime }}
+                            {% endif %}
+                        </div>
+                        
+                        {% if conv_data.unread_count > 0 %}
+                            <div class="unread-badge">
+                                {% if conv_data.unread_count > 99 %}99+{% else %}{{ conv_data.unread_count }}{% endif %}
+                            </div>
+                        {% endif %}
+                        
+                        {% if conv_data.is_archived %}
+                            <i class="fas fa-archive" style="color: #999; font-size: 0.8rem;" title="Archivée"></i>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Flèche pour mobile -->
+                    <div class="desktop-hidden" style="margin-left: auto; color: #ccc;">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-chat">
+                    <i class="fas fa-comments"></i>
+                    <h3>Aucune conversation</h3>
+                    <p>{% if filter_type == 'unread' %}Aucun message non lu{% elif filter_type == 'archived' %}Aucune conversation archivée{% else %}Commencez par envoyer un message à un ami{% endif %}</p>
+                    {% if not filter_type or filter_type == 'all' %}
+                        <a href="{% url 'relations:page' %}" class="btn btn-primary" 
+                           style="margin-top: 1rem; padding: 0.75rem 1.5rem; background: linear-gradient(45deg, #667eea, #764ba2); color: white; text-decoration: none; border-radius: 25px;">
+                            <i class="fas fa-users"></i> Voir mes amis
+                        </a>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Section pour démarrer de nouvelles conversations -->
+        {% if amis_disponibles and not filter_type or filter_type == 'all' %}
+        <div class="new-conversations-section" style="padding: 1rem; border-top: 1px solid #f1f3f4; background: #f8f9fa;">
+            <h4 style="margin-bottom: 1rem; font-size: 1rem; color: #667eea; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-plus-circle"></i> 
+                <span class="mobile-hidden">Nouvelle conversation</span>
+                <span class="desktop-hidden">Nouveaux chats</span>
+            </h4>
+            
+            <div class="friends-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem;">
+                {% for ami in amis_disponibles|slice:":8" %}
+                    <a href="{% url 'messagerie:start_conversation' ami.id %}" 
+                       class="friend-item" 
+                       style="display: flex; flex-direction: column; align-items: center; padding: 0.75rem; background: white; border-radius: 12px; text-decoration: none; color: inherit; transition: all 0.3s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.1);"
+                       onmouseover="this.style.transform='translateY(-2px)'"
+                       onmouseout="this.style.transform='translateY(0)'">
+                        <div class="friend-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(45deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-bottom: 0.5rem; overflow: hidden;">
+                            {% if ami.photo %}
+                                <img src="{{ ami.photo.url }}" alt="{{ ami.prenom }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                                {{ ami.prenom.0 }}{{ ami.nom.0 }}
+                            {% endif %}
+                        </div>
+                        <div class="friend-name" style="font-size: 0.8rem; text-align: center; font-weight: 500;">
+                            {{ ami.prenom }}
+                            <span class="mobile-hidden">{{ ami.nom.0 }}.</span>
+                        </div>
+                    </a>
+                {% endfor %}
+                
+                {% if amis_disponibles|length > 8 %}
+                    <a href="{% url 'relations:page' %}" 
+                       class="more-friends" 
+                       style="display: flex; flex-direction: column; align-items: center; padding: 0.75rem; background: linear-gradient(45deg, #667eea, #764ba2); border-radius: 12px; text-decoration: none; color: white; transition: all 0.3s ease;"
+                       onmouseover="this.style.transform='translateY(-2px)'"
+                       onmouseout="this.style.transform='translateY(0)'">
+                        <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div style="font-size: 0.8rem; text-align: center; font-weight: 500;">
+                            +{{ amis_disponibles|length|add:"-8" }}
+                        </div>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Chat placeholder (desktop seulement) -->
+    <div class="chat-main mobile-hidden">
+        <div class="empty-chat">
+            <i class="fas fa-comment-alt"></i>
+            <h3>Sélectionnez une conversation</h3>
+            <p>Choisissez une conversation existante ou commencez-en une nouvelle</p>
+            
+            <!-- Statistiques rapides -->
+            <div style="margin-top: 2rem; display: flex; gap: 2rem; justify-content: center;">
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; color: #667eea;">{{ total_conversations }}</div>
+                    <div style="font-size: 0.9rem; color: #666;">Conversations</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; color: #ff4757;">{{ total_unread }}</div>
+                    <div style="font-size: 0.9rem; color: #666;">Non lus</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation pour actions -->
+<div id="actionModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 15px; max-width: 400px; width: 90%;">
+        <h4 id="modalTitle">Confirmer l'action</h4>
+        <p id="modalMessage">Êtes-vous sûr de vouloir effectuer cette action ?</p>
+        <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+            <button onclick="closeModal()" style="padding: 0.5rem 1rem; border: 1px solid #ccc; background: white; border-radius: 8px; cursor: pointer;">
+                Annuler
+            </button>
+            <button id="confirmBtn" style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                Confirmer
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentFilter = '{{ filter_type|default:"all" }}';
+let isLoading = false;
+function handleConversationClick(conversationId, event) {
+    if (isMobile) {
+        // Sur mobile, gestion spéciale
+        event.preventDefault();
+        if (history.pushState) {
+            history.pushState(null, null, `/messagerie/chat/${conversationId}/`);
+        }
+        showChatView();
+        setTimeout(() => {
+            window.location.href = `/messagerie/chat/${conversationId}/`;
+        }, 150);
+    } else {
+        // Sur desktop, navigation normale
+        window.location.href = `/messagerie/chat/${conversationId}/`;
+    }
+}
+// Toggle filtres (desktop)
+function toggleFilters() {
+    $('#filterTabs').slideToggle();
+}
+
+// Filtrer les conversations
+function filterConversations(type) {
+    if (isLoading) return;
+    
+    currentFilter = type;
+    
+    // Mettre à jour l'interface
+    $('.filter-tab').removeClass('active');
+    $(`.filter-tab:contains("${type === 'all' ? 'Toutes' : type === 'unread' ? 'Non lues' : 'Archivées'}")`).addClass('active');
+    $('#mobileFilter').val(type);
+    
+    const params = new URLSearchParams();
+    if (type !== 'all') params.append('filter', type);
+    
+    const search = $('#conversationSearch').val();
+    if (search) params.append('search', search);
+    
+    loadConversations(params.toString());
+}
+
+// Recherche en temps réel
+let searchTimeout;
+$('#conversationSearch').on('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        if (isLoading) return;
+        
+        const params = new URLSearchParams();
+        if (currentFilter !== 'all') params.append('filter', currentFilter);
+        
+        const search = $(this).val();
+        if (search) params.append('search', search);
+        
+        loadConversations(params.toString());
+    }, 500);
+});
+
+// Charger les conversations via AJAX
+function loadConversations(queryString = '') {
+    if (isLoading) return;
+    
+    isLoading = true;
+    const url = `{% url 'messagerie:conversations' %}${queryString ? '?' + queryString : ''}`;
+    
+    $('#conversationsList').html(`
+        <div class="loading-conversations">
+            Chargement des conversations...
+        </div>
+    `);
+    
+    $.ajax({
+        url: url,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        timeout: 5000,
+        success: function(response) {
+            if (response.success) {
+                updateConversationsList(response.conversations);
+            } else {
+                showError('Erreur lors du chargement des conversations');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Erreur AJAX:', {xhr, status, error});
+            showError('Erreur de connexion');
+        },
+        complete: function() {
+            isLoading = false;
+        }
+    });
+}
+
+// Mettre à jour la liste des conversations
+function updateConversationsList(conversations) {
+    let html = '';
+    
+    if (conversations.length > 0) {
+        conversations.forEach(conv => {
+            const unreadBadge = conv.unread_count > 0 ? 
+                `<div class="unread-badge">${conv.unread_count > 99 ? '99+' : conv.unread_count}</div>` : '';
+            
+            const archivedIcon = conv.is_archived ? 
+                '<i class="fas fa-archive" style="color: #999; font-size: 0.8rem;" title="Archivée"></i>' : '';
+            
+            let lastMessagePreview = '<span style="color: #999; font-style: italic;">Aucun message</span>';
+            if (conv.last_message) {
+                if (conv.last_message.type === 'file') {
+                    lastMessagePreview = '<i class="fas fa-file"></i> Fichier';
+                } else if (conv.last_message.type === 'image') {
+                    lastMessagePreview = '<i class="fas fa-image"></i> Image';
+                } else if (conv.last_message.type === 'video') {
+                    lastMessagePreview = '<i class="fas fa-video"></i> Vidéo';
+                } else if (conv.last_message.type === 'audio') {
+                    lastMessagePreview = '<i class="fas fa-microphone"></i> Audio';
+                } else if (conv.last_message.type === 'emoji') {
+                    lastMessagePreview = conv.last_message.content;
+                } else {
+                    const prefix = conv.last_message.sender_is_me ? '<span style="color: #667eea;">Vous: </span>' : '';
+                    lastMessagePreview = prefix + (conv.last_message.content ? 
+                        conv.last_message.content.substring(0, 35) + (conv.last_message.content.length > 35 ? '...' : '') : 
+                        'Message');
+                }
+            }
+            
+            const photoHtml = conv.other_participant.photo ? 
+                `<img src="${conv.other_participant.photo}" alt="${conv.other_participant.name}" style="width: 100%; height: 100%; object-fit: cover;">` :
+                `<span style="color: white; font-weight: bold;">${conv.other_participant.name.charAt(0).toUpperCase()}</span>`;
+            
+            html += `
+                <div class="conversation-item" data-conversation-id="${conv.id}" onclick="handleConversationClick('${conv.id}', event)">
+                    <div class="conversation-avatar">
+                        ${photoHtml}
+                        ${conv.other_participant.is_online ? '<div class="online-indicator"></div>' : ''}
+                    </div>
+                    <div class="conversation-info">
+                        <div class="conversation-name">${conv.other_participant.name}</div>
+                        <div class="conversation-preview">${lastMessagePreview}</div>
+                    </div>
+                    <div class="conversation-meta">
+                        <div class="conversation-time">${conv.last_message ? conv.last_message.time : ''}</div>
+                        ${unreadBadge}
+                        ${archivedIcon}
+                    </div>
+                    <div class="desktop-hidden" style="margin-left: auto; color: #ccc;">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            `;
+        });
+    } else {
+        const emptyMessage = currentFilter === 'unread' ? 'Aucun message non lu' :
+                           currentFilter === 'archived' ? 'Aucune conversation archivée' :
+                           'Aucune conversation trouvée';
+        
+        html = `
+            <div class="empty-chat">
+                <i class="fas fa-comments"></i>
+                <h3>${emptyMessage}</h3>
+                <p>Aucune conversation ne correspond à vos critères</p>
+                ${currentFilter === 'all' ? '<a href="/relations/" class="btn btn-primary" style="margin-top: 1rem; padding: 0.75rem 1.5rem; background: linear-gradient(45deg, #667eea, #764ba2); color: white; text-decoration: none; border-radius: 25px;"><i class="fas fa-users"></i> Voir mes amis</a>' : ''}
+            </div>
+        `;
+    }
+    
+    $('#conversationsList').html(html);
+}
+
+// Gestion des erreurs
+function showError(message) {
+    $('#conversationsList').html(`
+        <div style="text-align: center; padding: 2rem; color: #666;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem; color: #ff4757;"></i>
+            <p>${message}</p>
+            <button onclick="loadConversations()" class="btn btn-primary" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                Réessayer
+            </button>
+        </div>
+    `);
+}
+
+// Modal functions
+function closeModal() {
+    $('#actionModal').fadeOut();
+}
+
+function showConfirmModal(title, message, onConfirm) {
+    $('#modalTitle').text(title);
+    $('#modalMessage').text(message);
+    $('#confirmBtn').off('click').on('click', function() {
+        closeModal();
+        onConfirm();
+    });
+    $('#actionModal').fadeIn();
+}
+
+// Actions longues sur conversations (mobile)
+$(document).on('touchstart', '.conversation-item', function(e) {
+    const self = this;
+    this.touchTimeout = setTimeout(() => {
+        if (isMobile) {
+            showConversationActions($(self).data('conversation-id'));
+        }
+    }, 500);
+});
+
+$(document).on('touchend touchcancel', '.conversation-item', function(e) {
+    clearTimeout(this.touchTimeout);
+});
+
+function showConversationActions(conversationId) {
+    // Afficher menu d'actions pour mobile
+    const actions = `
+        <div style="position: fixed; bottom: 0; left: 0; right: 0; background: white; border-radius: 15px 15px 0 0; box-shadow: 0 -5px 15px rgba(0,0,0,0.2); z-index: 3000; padding: 1rem;">
+            <div style="width: 40px; height: 4px; background: #ccc; border-radius: 2px; margin: 0 auto 1rem;"></div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <button onclick="openConversation('${conversationId}')" style="padding: 1rem; border: none; background: #f8f9fa; border-radius: 8px; text-align: left;">
+                    <i class="fas fa-comment"></i> Ouvrir la conversation
+                </button>
+                <button onclick="archiveConversation('${conversationId}')" style="padding: 1rem; border: none; background: #f8f9fa; border-radius: 8px; text-align: left;">
+                    <i class="fas fa-archive"></i> Archiver
+                </button>
+                <button onclick="closeActionSheet()" style="padding: 1rem; border: none; background: #ff4757; color: white; border-radius: 8px; text-align: left;">
+                    <i class="fas fa-times"></i> Annuler
+                </button>
+            </div>
+        </div>
+        <div onclick="closeActionSheet()" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); z-index: 2999;"></div>
+    `;
+    
+    $('body').append(actions);
+}
+
+function closeActionSheet() {
+    $('body > div:last-child').remove(); // overlay
+    $('body > div:last-child').remove(); // action sheet
+}
+
+function openConversation(conversationId) {
+    closeActionSheet();
+    handleConversationClick(conversationId, {preventDefault: () => {}});
+}
+
+function archiveConversation(conversationId) {
+    closeActionSheet();
+    showConfirmModal(
+        'Archiver la conversation',
+        'Voulez-vous archiver cette conversation ?',
+        function() {
+            // Implémenter l'archivage
+            $.ajax({
+                url: `/messagerie/conversation/${conversationId}/archive/`,
+                method: 'POST',
+                data: JSON.stringify({action: 'archive'}),
+                contentType: 'application/json',
+                success: function(response) {
+                    if (response.success) {
+                        showToast('Conversation archivée', 'success');
+                        loadConversations();
+                    }
+                },
+                error: function() {
+                    showToast('Erreur lors de l\'archivage', 'error');
+                }
+            });
+        }
+    );
+}
+
+// Actualiser les conversations périodiquement
+let refreshInterval;
+
+function startPeriodicRefresh() {
+    refreshInterval = setInterval(() => {
+        if (document.visibilityState === 'visible' && !isLoading) {
+            const params = new URLSearchParams();
+            if (currentFilter !== 'all') params.append('filter', currentFilter);
+            
+            const search = $('#conversationSearch').val();
+            if (search) params.append('search', search);
+            
+            loadConversations(params.toString());
+        }
+    }, 15000); // Toutes les 30 secondes
+}
+
+function stopPeriodicRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
+}
+
+// Gérer la visibilité de la page
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        stopPeriodicRefresh();
+    } else {
+        startPeriodicRefresh();
+    }
+});
+
+// Initialiser au chargement
+$(document).ready(function() {
+    startPeriodicRefresh();
+    
+    // Charger immédiatement si pas de conversations
+    if ($('#conversationsList .conversation-item').length === 0) {
+        loadConversations();
+    }
+});
+
+// Nettoyer avant déchargement
+$(window).on('beforeunload', function() {
+    stopPeriodicRefresh();
+});
+</script>
+{% endblock %}

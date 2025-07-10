@@ -1,0 +1,340 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Modifier mon profil - AESConnect{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card animate-slide-in">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-1">
+                            <i class="bi bi-person-gear me-2"></i>Modifier mon profil
+                        </h4>
+                        <p class="mb-0 opacity-75">Mettez à jour vos informations</p>
+                    </div>
+                    <a href="{% url 'accounts:profile' %}" class="btn btn-outline-light">
+                        <i class="bi bi-arrow-left me-2"></i>Retour
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data" id="editProfileForm">
+                    {% csrf_token %}
+                    
+                    <!-- Photo -->
+                    <div class="text-center mb-5">
+                        <div class="position-relative d-inline-block">
+                            {% if etudiant.photo %}
+                                <img src="{{ etudiant.photo.url }}" alt="Photo" 
+                                     id="currentPhoto" class="rounded-circle border" 
+                                     style="width: 100px; height: 100px; object-fit: cover;">
+                            {% else %}
+                                <div id="currentPhoto" class="rounded-circle d-flex align-items-center justify-content-center border"
+                                     style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));">
+                                    <span class="text-white h4 mb-0">{{ etudiant.prenom|first }}{{ etudiant.nom|first }}</span>
+                                </div>
+                            {% endif %}
+                            <button type="button" class="btn btn-primary btn-sm position-absolute bottom-0 end-0 rounded-circle" 
+                                    style="width: 32px; height: 32px;" onclick="document.getElementById('id_photo').click()">
+                                <i class="bi bi-camera"></i>
+                            </button>
+                        </div>
+                        <div class="mt-3">
+                            {{ form.photo }}
+                            <div class="form-text">JPG, PNG (max 5MB)</div>
+                            {% if form.photo.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.photo.errors|join:", " }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Informations personnelles -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2 mb-4">
+                            <i class="bi bi-person me-2"></i>Informations personnelles
+                        </h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.prenom.id_for_label }}" class="form-label">
+                                    {{ form.prenom.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.prenom }}
+                                {% if form.prenom.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.prenom.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.nom.id_for_label }}" class="form-label">
+                                    {{ form.nom.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.nom }}
+                                {% if form.nom.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.nom.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.telephone.id_for_label }}" class="form-label">
+                                    {{ form.telephone.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.telephone }}
+                                {% if form.telephone.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.telephone.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.date_naissance.id_for_label }}" class="form-label">
+                                    {{ form.date_naissance.label }}
+                                </label>
+                                {{ form.date_naissance }}
+                                {% if form.date_naissance.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.date_naissance.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.ville.id_for_label }}" class="form-label">
+                                    {{ form.ville.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.ville }}
+                                {% if form.ville.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.ville.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.situation.id_for_label }}" class="form-label">
+                                    {{ form.situation.label }}
+                                </label>
+                                {{ form.situation }}
+                                <div class="form-text">Situation actuelle (optionnel)</div>
+                                {% if form.situation.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.situation.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Confidentialité -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2 mb-4">
+                            <i class="bi bi-shield-check me-2"></i>Confidentialité
+                        </h5>
+                        
+                        <div class="card" style="background: var(--gray-100);">
+                            <div class="card-body">
+                                <div class="form-check form-switch">
+                                    {{ form.profil_prive }}
+                                    <label class="form-check-label fw-semibold" for="{{ form.profil_prive.id_for_label }}">
+                                        {{ form.profil_prive.label }}
+                                    </label>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Si activé, seuls vos amis verront votre profil complet
+                                </small>
+                                {% if form.profil_prive.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.profil_prive.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Erreurs générales -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            {{ form.non_field_errors|join:", " }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Boutons -->
+                    <div class="d-flex gap-3 justify-content-end">
+                        <a href="{% url 'accounts:profile' %}" class="btn btn-secondary">
+                            <i class="bi bi-x me-2"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="saveBtn">
+                            <i class="bi bi-check me-2"></i>Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Actions supplémentaires -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-shield-lock text-warning" style="font-size: 2.5rem;"></i>
+                        <h6 class="fw-bold mt-3 mb-2">Sécurité</h6>
+                        <p class="text-muted small mb-3">Modifier votre mot de passe</p>
+                        <a href="{% url 'accounts:change_password' %}" class="btn btn-outline-warning">
+                            Changer le mot de passe
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-download text-primary" style="font-size: 2.5rem;"></i>
+                        <h6 class="fw-bold mt-3 mb-2">Mes données</h6>
+                        <p class="text-muted small mb-3">Télécharger vos données</p>
+                        <button class="btn btn-outline-primary" onclick="downloadData()">
+                            Télécharger
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    #id_photo {
+        display: none;
+    }
+    
+    .preview-image {
+        max-width: 100px;
+        max-height: 100px;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const photoInput = document.getElementById('id_photo');
+    const currentPhoto = document.getElementById('currentPhoto');
+    const editForm = document.getElementById('editProfileForm');
+    const saveBtn = document.getElementById('saveBtn');
+
+    // Photo preview
+    if (photoInput) {
+        photoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validation
+                if (!file.type.startsWith('image/')) {
+                    showToast('Veuillez sélectionner une image valide', 'error');
+                    this.value = '';
+                    return;
+                }
+                
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast('La taille ne peut pas dépasser 5MB', 'error');
+                    this.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (currentPhoto.tagName === 'IMG') {
+                        currentPhoto.src = e.target.result;
+                    } else {
+                        const newImg = document.createElement('img');
+                        newImg.src = e.target.result;
+                        newImg.alt = 'Nouvelle photo';
+                        newImg.id = 'currentPhoto';
+                        newImg.className = 'rounded-circle border';
+                        newImg.style.width = '100px';
+                        newImg.style.height = '100px';
+                        newImg.style.objectFit = 'cover';
+                        currentPhoto.parentNode.replaceChild(newImg, currentPhoto);
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Form validation
+    if (editForm && saveBtn) {
+        editForm.addEventListener('submit', function(e) {
+            let isValid = true;
+            const requiredFields = ['prenom', 'nom', 'telephone', 'ville'];
+            
+            requiredFields.forEach(fieldName => {
+                const field = document.querySelector(`#id_${fieldName}`);
+                if (field && !field.value.trim()) {
+                    isValid = false;
+                    field.classList.add('is-invalid');
+                } else if (field) {
+                    field.classList.remove('is-invalid');
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+                showToast('Veuillez remplir tous les champs obligatoires', 'warning');
+                return;
+            }
+
+            setLoadingState(saveBtn, true);
+        });
+    }
+
+    // Real-time validation
+    document.querySelectorAll('input[required], select[required]').forEach(field => {
+        field.addEventListener('blur', function() {
+            if (!this.value.trim()) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+
+        field.addEventListener('input', function() {
+            if (this.classList.contains('is-invalid') && this.value.trim()) {
+                this.classList.remove('is-invalid');
+            }
+        });
+    });
+});
+
+function downloadData() {
+    showToast('Préparation de vos données...', 'info');
+    
+    makeAjaxRequest('/accounts/api/export-data/', { method: 'POST' })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Données préparées avec succès', 'success');
+        } else {
+            showToast('Erreur lors de la préparation', 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Erreur de connexion', 'error');
+    });
+}
+</script>
+{% endblock %}

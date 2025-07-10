@@ -1,0 +1,1306 @@
+{% extends 'messagerie/base.html' %}
+
+{% comment %} {% block title %}Chat avec {{ other_participant.prenom }} {{ other_participant.nom }}{% endblock %} {% endcomment %}
+
+{% block content %}
+<div class="chat-container">
+    <!-- Sidebar des conversations (desktop uniquement) -->
+    <div class="conversations-sidebar mobile-hidden">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-comments"></i> Messages</h3>
+            <a href="{% url 'messagerie:conversations' %}" class="chat-btn">
+                <i class="fas fa-list"></i>
+            </a>
+        </div>
+
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="Rechercher..." id="sidebarSearch">
+        </div>
+
+        <div class="conversations-list" id="sidebarConversations">
+            <div class="loading-conversations">
+                Chargement des conversations...
+            </div>
+        </div>
+    </div>
+
+    <!-- Vue de chat principale -->
+    <div class="chat-main">
+        <div class="chat-header">
+            <!-- Bouton retour mobile -->
+            <button class="mobile-back-btn desktop-hidden" onclick="goBackToConversations()">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            
+            <div class="chat-user-info" style="display: flex; align-items: center; gap: 1rem;">
+                <div class="chat-user-avatar">
+                    {% if other_participant.photo %}
+                        <img src="{{ other_participant.photo.url }}" alt="{{ other_participant.prenom }}">
+                    {% else %}
+                        {{ other_participant.prenom.0 }}{{ other_participant.nom.0 }}
+                    {% endif %}
+                </div>
+                <div>
+                    <h4 style="margin: 0; font-size: 1.2rem;">
+                        {{ other_participant.prenom }} {{ other_participant.nom }}
+                    </h4>
+                    <p style="margin: 0; opacity: 0.8; font-size: 0.9rem;">
+                        {{ other_participant.utilisateur.email }}
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Actions desktop -->
+            <div class="chat-actions mobile-hidden">
+                <button class="chat-btn" onclick="toggleSearch()" title="Rechercher dans la conversation">
+                    <i class="fas fa-search"></i>
+                </button>
+                <button class="chat-btn" onclick="showConversationInfo()" title="Informations">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+                <button class="chat-btn" onclick="archiveConversation()" title="Archiver la conversation">
+                    <i class="fas fa-archive"></i>
+                </button>
+                <button class="chat-btn" onclick="showConversationSettings()" title="Paramètres">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+            
+            <!-- Menu mobile -->
+            <div class="desktop-hidden">
+                <button class="chat-btn" onclick="showMobileMenu()" id="mobileMenuBtn">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Barre de recherche (masquée par défaut) -->
+        <div id="searchBar" style="display: none; padding: 1rem; background: #f8f9fa; border-bottom: 1px solid #e9ecef;">
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <input type="text" id="searchInput" placeholder="Rechercher dans la conversation..." 
+                       style="flex: 1; padding: 0.5rem; border: 1px solid #ccc; border-radius: 8px; font-size: 16px;">
+                <button onclick="searchMessages()" style="padding: 0.5rem; background: #667eea; color: white; border: none; border-radius: 8px;">
+                    <i class="fas fa-search"></i>
+                </button>
+                <button onclick="toggleSearch()" style="padding: 0.5rem; background: #6c757d; color: white; border: none; border-radius: 8px;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="messages-container" id="messagesContainer">
+            {% for message in messages %}
+                <div class="message {% if message.sender == user_etudiant %}sent{% endif %}" 
+                     data-message-id="{{ message.id }}">
+                    <div class="message-avatar">
+                        {% if message.sender.photo %}
+                            <img src="{{ message.sender.photo.url }}" alt="{{ message.sender.prenom }}">
+                        {% else %}
+                            {{ message.sender.prenom.0 }}{{ message.sender.nom.0 }}
+                        {% endif %}
+                    </div>
+                    <div class="message-content">
+                        {% if message.reply_to %}
+                            <div class="message-reply" style="padding: 0.5rem; background: rgba(0,0,0,0.1); border-radius: 10px; margin-bottom: 0.5rem; font-size: 0.9rem; border-left: 3px solid #667eea;">
+                                <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                                    {{ message.reply_to.sender.prenom }}
+                                </div>
+                                <div style="opacity: 0.8;">
+                                    {% if message.reply_to.message_type == 'image' %}
+                                        <i class="fas fa-image"></i> Image
+                                    {% elif message.reply_to.message_type == 'file' %}
+                                        <i class="fas fa-file"></i> Fichier
+                                    {% else %}
+                                        {{ message.reply_to.content|truncatechars:50 }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="message-bubble" 
+                             {% if message.can_be_edited and message.sender == user_etudiant %}
+                             ondblclick="startEditMessage('{{ message.id }}', '{{ message.content|escapejs }}')"
+                             {% endif %}>
+                            {% if message.content %}
+                                <div class="message-text">{{ message.content|linebreaks }}</div>
+                            {% endif %}
+                            
+                            {% if message.file %}
+                                <div class="message-file" style="margin-top: 0.5rem;">
+                                    {% if message.message_type == 'image' %}
+                                        <img src="{{ message.file.url }}" 
+                                             style="max-width: 250px; max-height: 300px; border-radius: 10px; cursor: pointer;" 
+                                             onclick="showImageModal('{{ message.file.url }}', '{{ message.file.name }}')">
+                                    {% elif message.message_type == 'video' %}
+                                        <video controls style="max-width: 250px; max-height: 300px; border-radius: 10px;">
+                                            <source src="{{ message.file.url }}" type="video/mp4">
+                                            Votre navigateur ne supporte pas les vidéos.
+                                        </video>
+                                    {% elif message.message_type == 'audio' %}
+                                        <audio controls style="width: 100%; max-width: 300px;">
+                                            <source src="{{ message.file.url }}" type="audio/mpeg">
+                                            Votre navigateur ne supporte pas l'audio.
+                                        </audio>
+                                    {% else %}
+                                        <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border-radius: 10px;">
+                                            <i class="fas fa-file" style="font-size: 1.5rem;"></i>
+                                            <div style="flex: 1; min-width: 0;">
+                                                <div class="message-file-name" style="font-weight: 500; word-break: break-all;">
+                                                    {{ message.file.name|default:"Fichier" }}
+                                                </div>
+                                                <div class="message-file-size" style="font-size: 0.8rem; opacity: 0.7;">
+                                                    {{ message.get_file_size_display }}
+                                                </div>
+                                            </div>
+                                            <a href="{{ message.file.url }}" download class="file-download-btn" 
+                                               style="padding: 0.5rem; background: rgba(255,255,255,0.2); border-radius: 50%; color: inherit; text-decoration: none;">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            
+                            {% if message.is_edited %}
+                                <small style="opacity: 0.7; font-size: 0.75rem; font-style: italic;">
+                                    modifié {{ message.edited_at|time:"H:i" }}
+                                </small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="message-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+                            <div class="message-time" style="font-size: 0.8rem; color: #999;">
+                                {{ message.created_at|time:"H:i" }}
+                                {% if message.sender == user_etudiant %}
+                                    {% if message.is_read %}
+                                        <i class="fas fa-check-double" style="color: #4fc3f7; margin-left: 0.25rem;"></i>
+                                    {% else %}
+                                        <i class="fas fa-check" style="margin-left: 0.25rem;"></i>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Actions message -->
+                            <div class="message-actions" style="opacity: 0; transition: opacity 0.3s ease;">
+                                <button onclick="replyToMessage('{{ message.id }}', '{{ message.content|escapejs }}', '{{ message.sender.prenom }}')" 
+                                        class="message-action-btn" title="Répondre">
+                                    <i class="fas fa-reply"></i>
+                                </button>
+                                {% if message.sender == user_etudiant and message.can_be_edited %}
+                                    <button onclick="startEditMessage('{{ message.id }}', '{{ message.content|escapejs }}')" 
+                                            class="message-action-btn" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                {% endif %}
+                                <button onclick="addReaction('{{ message.id }}')" 
+                                        class="message-action-btn" title="Réagir">
+                                    <i class="fas fa-smile"></i>
+                                </button>
+                                <button onclick="deleteMessage('{{ message.id }}')" 
+                                        class="message-action-btn" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {% if message.reactions.all %}
+                            <div class="message-reactions" style="display: flex; gap: 0.25rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                                {% for reaction in message.reactions.all %}
+                                    <div class="reaction" 
+                                         onclick="toggleReaction('{{ message.id }}', '{{ reaction.reaction_type }}')"
+                                         style="background: rgba(255, 255, 255, 0.9); border-radius: 15px; padding: 0.25rem 0.5rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.3s ease;">
+                                        {{ reaction.get_reaction_type_display }} 1
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-chat">
+                    <i class="fas fa-comment-alt"></i>
+                    <h3>Aucun message</h3>
+                    <p>Commencez la conversation en envoyant un message</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Zone de réponse (masquée par défaut) -->
+        <div id="replyPreview" style="display: none; padding: 0.75rem; background: #f8f9fa; border-bottom: 1px solid #e9ecef;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-reply" style="color: #667eea;"></i>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 600; font-size: 0.9rem;" id="replyToUser"></div>
+                    <div style="color: #666; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="replyToContent"></div>
+                </div>
+                <button onclick="cancelReply()" style="background: none; border: none; color: #999; cursor: pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        {% if can_send_message %}
+        <div class="message-input-container">
+            <form class="message-input-form" id="messageForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="conversation_id" value="{{ conversation.id }}">
+                <input type="hidden" id="replyToId" name="reply_to" value="">
+                <input type="file" id="fileInput" style="display: none;" accept="*/*">
+                
+                <button type="button" class="file-input-btn" onclick="$('#fileInput').click()" title="Joindre un fichier">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+                
+                <div class="message-input-wrapper">
+                    <textarea class="message-input" name="content" placeholder="Tapez votre message..." 
+                              rows="1" id="messageInput" oninput="autoResize(this)"
+                              onkeydown="handleEnterKey(event)"></textarea>
+                    <button type="button" class="emoji-btn" onclick="toggleEmojiPicker()" title="Emoji">
+                        <i class="fas fa-smile"></i>
+                    </button>
+                </div>
+                
+                <button type="submit" class="send-btn" id="sendBtn" title="Envoyer">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+            
+            <!-- Aperçu du fichier sélectionné -->
+            <div id="filePreview" style="display: none; margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-file" id="fileIcon"></i>
+                    <div style="flex: 1; min-width: 0;">
+                        <div id="fileName" style="font-weight: 500; font-size: 0.9rem;"></div>
+                        <div id="fileSize" style="color: #666; font-size: 0.8rem;"></div>
+                    </div>
+                    <button type="button" onclick="removeFile()" style="background: none; border: none; color: #999; cursor: pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+            <div style="padding: 1rem; text-align: center; background: #f8f9fa; color: #666; border-top: 1px solid #e9ecef;">
+                <i class="fas fa-ban"></i> Vous ne pouvez plus envoyer de messages dans cette conversation.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal pour les images -->
+<div id="imageModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; cursor: pointer;" onclick="closeImageModal()">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 90%; max-height: 90%;">
+        <img id="modalImage" style="max-width: 100%; max-height: 100%; border-radius: 10px;">
+        <div style="text-align: center; color: white; margin-top: 1rem;">
+            <button onclick="closeImageModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
+                Fermer
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Sélecteur d'emoji -->
+<div id="emojiPicker" style="display: none; position: fixed; bottom: 90px; right: 20px; background: white; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); padding: 1rem; z-index: 2000; max-width: 300px;">
+    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.5rem;">
+        <span onclick="insertEmoji('😀')" style="cursor: pointer; font-size: 1.5rem; padding: 0.25rem; border-radius: 5px; transition: background 0.3s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">😀</span>
+        <span onclick="insertEmoji('😂')" style="cursor: pointer; font-size: 1.5rem; padding: 0.25rem; border-radius: 5px; transition: background 0.3s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">😂</span>
+        <span onclick="insertEmoji('😍')" style="cursor: pointer; font-size: 1.5rem; padding: 0.25rem; border-radius: 5px; transition: background 0.3s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">😍</span>
+        <span onclick="insertEmoji('👍')" style="cursor: pointer; font-size: 1.5rem; padding: 0.25rem; border-radius: 5px; transition: background 0.3s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">👍</span>
+        <span onclick="insertEmoji('❤️')" style="cursor: pointer; font-size: 1.5rem; padding: 0.25rem; border-radius: 5px; transition: background 0.3s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">❤️</span>
+        <span onclick="insertEmoji('😢')" style="cursor: pointer; font-size: 1.5rem; padding: 0.25rem; border-radius: 5px; transition: background 0.3s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">😢</span>
+        <span onclick="insertEmoji('😮')" style="cursor: pointer; font-size: 1.5rem; padding: 0.25rem; border-radius: 5px; transition: background 0.3s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">😮</span>
+        <span onclick="insertEmoji('😠')" style="cursor: pointer; font-size: 1.5rem; padding: 0.25rem; border-radius: 5px; transition: background 0.3s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">😠</span>
+        <span onclick="insertEmoji('🔥')" style="cursor: pointer; font-size: 1.5rem; padding: 0.25rem; border-radius: 5px; transition: background 0.3s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">🔥</span>
+        <span onclick="insertEmoji('👏')" style="cursor: pointer; font-size: 1.5rem; padding: 0.25rem; border-radius: 5px; transition: background 0.3s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">👏</span>
+        <span onclick="insertEmoji('🎉')" style="cursor: pointer; font-size: 1.5rem; padding: 0.25rem; border-radius: 5px; transition: background 0.3s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">🎉</span>
+        <span onclick="insertEmoji('💯')" style="cursor: pointer; font-size: 1.5rem; padding: 0.25rem; border-radius: 5px; transition: background 0.3s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">💯</span>
+    </div>
+    <div style="text-align: center; margin-top: 1rem;">
+        <button onclick="toggleEmojiPicker()" style="background: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
+            Fermer
+        </button>
+    </div>
+</div>
+
+<!-- Menu mobile -->
+<div id="mobileMenu" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: white; border-radius: 15px 15px 0 0; box-shadow: 0 -5px 15px rgba(0,0,0,0.2); z-index: 3000; padding: 1rem;">
+    <div style="width: 40px; height: 4px; background: #ccc; border-radius: 2px; margin: 0 auto 1rem;"></div>
+    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+        <button onclick="toggleSearch(); closeMobileMenu();" style="padding: 1rem; border: none; background: #f8f9fa; border-radius: 8px; text-align: left; cursor: pointer;">
+            <i class="fas fa-search" style="margin-right: 0.5rem;"></i> Rechercher dans la conversation
+        </button>
+        <button onclick="showConversationInfo(); closeMobileMenu();" style="padding: 1rem; border: none; background: #f8f9fa; border-radius: 8px; text-align: left; cursor: pointer;">
+            <i class="fas fa-info-circle" style="margin-right: 0.5rem;"></i> Informations sur la conversation
+        </button>
+        <button onclick="archiveConversation(); closeMobileMenu();" style="padding: 1rem; border: none; background: #f8f9fa; border-radius: 8px; text-align: left; cursor: pointer;">
+            <i class="fas fa-archive" style="margin-right: 0.5rem;"></i> Archiver la conversation
+        </button>
+        <button onclick="showConversationSettings(); closeMobileMenu();" style="padding: 1rem; border: none; background: #f8f9fa; border-radius: 8px; text-align: left; cursor: pointer;">
+            <i class="fas fa-cog" style="margin-right: 0.5rem;"></i> Paramètres de conversation
+        </button>
+        <button onclick="closeMobileMenu()" style="padding: 1rem; border: none; background: #ff4757; color: white; border-radius: 8px; text-align: left; cursor: pointer;">
+            <i class="fas fa-times" style="margin-right: 0.5rem;"></i> Annuler
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Variables globales pour le chat
+const conversationId = '{{ conversation.id }}';
+let lastMessageId = null;
+let isLoading = false;
+let refreshInterval;
+let currentReplyToId = null;
+let isEditing = false;
+let messageRetryQueue = [];
+
+// Initialiser le chat
+$(document).ready(function() {
+    initializeChat();
+});
+
+function initializeChat() {
+    // Charger la sidebar pour desktop
+    if (!isMobile) {
+        loadSidebarConversations();
+    }
+
+    scrollToBottom();
+    markAllAsRead();
+
+    // Initialiser les messages existants
+    const messages = $('#messagesContainer .message');
+    if (messages.length > 0) {
+        lastMessageId = messages.last().data('message-id');
+    }
+
+    // Actualiser les messages périodiquement (intelligent)
+    startMessageRefresh();
+
+    // Gestionnaires d'événements
+    setupEventHandlers();
+}
+
+function setupEventHandlers() {
+    // Gestion de la visibilité de la page (optimisée)
+    let isPageVisible = !document.hidden;
+    document.addEventListener('visibilitychange', function() {
+        isPageVisible = !document.hidden;
+        if (isPageVisible) {
+            consecutiveErrors = 0;
+            startMessageRefresh();
+            loadNewMessages(); // Charger immédiatement
+        } else {
+            stopMessageRefresh();
+        }
+    });
+
+    // Fermer l'emoji picker en cliquant ailleurs
+    $(document).click(function(event) {
+        if (!$(event.target).closest('#emojiPicker, .emoji-btn').length) {
+            $('#emojiPicker').hide();
+        }
+    });
+
+    // Fermer le menu mobile en cliquant ailleurs
+    $(document).click(function(event) {
+        if (!$(event.target).closest('#mobileMenu, #mobileMenuBtn').length) {
+            closeMobileMenu();
+        }
+    });
+
+    // Gestion du scroll intelligent
+    let userScrolledUp = false;
+    $('#messagesContainer').on('scroll', function() {
+        const container = this;
+        const scrollTop = container.scrollTop;
+        const scrollHeight = container.scrollHeight;
+        const clientHeight = container.clientHeight;
+
+        // Déterminer si l'utilisateur a scrollé vers le haut
+        userScrolledUp = scrollTop < scrollHeight - clientHeight - 50;
+    });
+}
+
+function startMessageRefresh() {
+    if (refreshInterval) return;
+
+    // Intervalle adaptatif basé sur l'activité et la connexion
+    let interval = 3000; // Par défaut 3 secondes
+
+    if (!document.hidden) {
+        interval = window.slowConnection ? 10000 : 3000;
+    } else {
+        interval = window.slowConnection ? 30000 : 10000;
+    }
+
+    refreshInterval = setInterval(loadNewMessages, interval);
+}
+
+function stopMessageRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
+}
+
+// Charger les conversations de la sidebar (desktop)
+function loadSidebarConversations() {
+    if (isMobile) return;
+
+    $.ajax({
+        url: '{% url "messagerie:conversations" %}',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        timeout: 10000,
+        success: function(response) {
+            if (response.success && response.conversations) {
+                updateSidebarConversations(response.conversations);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Erreur chargement sidebar:', {xhr, status, error});
+        }
+    });
+}
+
+// Mettre à jour la sidebar
+function updateSidebarConversations(conversations) {
+    if (isMobile) return;
+
+    if (!conversations || conversations.length === 0) {
+        $('#sidebarConversations').html(`
+            <div style="padding: 2rem; text-align: center; color: #666;">
+                <i class="fas fa-comments" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                <p>Aucune conversation</p>
+            </div>
+        `);
+        return;
+    }
+
+    let html = '';
+    conversations.forEach(conv => {
+        const isActive = conv.id === conversationId ? 'active' : '';
+        const unreadBadge = conv.unread_count > 0 ? 
+            `<div class="unread-badge">${conv.unread_count}</div>` : '';
+
+        const photoHtml = conv.other_participant.photo ? 
+            `<img src="${conv.other_participant.photo}" alt="${conv.other_participant.name}">` :
+            `<span style="color: white; font-weight: bold;">${conv.other_participant.name.charAt(0).toUpperCase()}</span>`;
+
+        let lastMessageText = 'Aucun message';
+        if (conv.last_message) {
+            if (conv.last_message.type === 'image') {
+                lastMessageText = '📷 Image';
+            } else if (conv.last_message.type === 'file') {
+                lastMessageText = '📁 Fichier';
+            } else {
+                lastMessageText = conv.last_message.content || 'Message';
+            }
+        }
+
+        html += `
+            <a href="/messagerie/chat/${conv.id}/" class="conversation-item ${isActive}">
+                <div class="conversation-avatar">${photoHtml}</div>
+                <div class="conversation-info">
+                    <div class="conversation-name">${conv.other_participant.name}</div>
+                    <div class="conversation-preview">${lastMessageText}</div>
+                </div>
+                <div class="conversation-meta">
+                    <div class="conversation-time">${conv.last_message ? conv.last_message.time : ''}</div>
+                    ${unreadBadge}
+                </div>
+            </a>
+        `;
+    });
+
+    $('#sidebarConversations').html(html);
+}
+
+// Envoyer un message (amélioré)
+$('#messageForm').on('submit', function(e) {
+    e.preventDefault();
+
+    if (isLoading) return;
+
+    const content = $('#messageInput').val().trim();
+    const file = $('#fileInput')[0].files[0];
+
+    if (!content && !file) {
+        showToast('Veuillez saisir un message ou sélectionner un fichier', 'error');
+        return;
+    }
+
+    // Vérifier la connexion
+    if (!isOnline) {
+        showToast('Aucune connexion Internet', 'error');
+        return;
+    }
+
+    isLoading = true;
+    const $sendBtn = $('#sendBtn');
+    const originalHtml = $sendBtn.html();
+    $sendBtn.prop('disabled', true).html('<span class="loading"></span>');
+
+    // Préparer les données
+    const formData = new FormData();
+    formData.append('conversation_id', conversationId);
+    if (content) formData.append('content', content);
+    if (file) formData.append('file', file);
+    if (currentReplyToId) formData.append('reply_to', currentReplyToId);
+
+    // Nettoyer l'interface immédiatement
+    $('#messageInput').val('').css('height', 'auto');
+    $('#fileInput').val('');
+    $('#filePreview').hide();
+    cancelReply();
+
+    // Ajouter le message optimiste (affichage immédiat) seulement pour le texte
+    let optimisticMessageId = null;
+    if (content && !file) {
+        optimisticMessageId = 'temp-' + Date.now();
+        const optimisticMessage = {
+            id: optimisticMessageId,
+            content: content,
+            sender_name: '{{ user_etudiant.get_full_name|default:"Vous" }}',
+            sender_photo: '{% if user_etudiant.photo %}{{ user_etudiant.photo.url }}{% endif %}',
+            is_sent: true,
+            message_type: 'text',
+            formatted_time: new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}),
+            is_read: false,
+            is_edited: false,
+            file_url: null,
+            reply_to: null,
+            reactions: [],
+            can_edit: true
+        };
+        addMessageToChat(optimisticMessage, true);
+        scrollToBottom();
+    }
+
+    // Fonction de retry
+    const attemptSend = (retryCount = 0) => {
+        $.ajax({
+            url: '{% url "messagerie:send_message" %}',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            timeout: 15000,
+            success: function(response) {
+                consecutiveErrors = 0;
+                if (response.success) {
+                    if (optimisticMessageId) {
+                        $(`[data-message-id="${optimisticMessageId}"]`).remove();
+                    }
+                    addMessageToChat(response.message);
+                    scrollToBottom();
+                    if (!isMobile) {
+                        loadSidebarConversations();
+                    }
+                } else {
+                    if (optimisticMessageId) {
+                        $(`[data-message-id="${optimisticMessageId}"]`).remove();
+                    }
+                    showToast(response.error || 'Erreur lors de l\'envoi', 'error');
+                    $('#messageInput').val(content);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Erreur AJAX:', {xhr, status, error});
+                
+                if (optimisticMessageId) {
+                    $(`[data-message-id="${optimisticMessageId}"]`).addClass('message-error');
+                }
+                
+                let errorMsg = 'Erreur lors de l\'envoi du message';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg = xhr.responseJSON.error;
+                } else if (status === 'timeout') {
+                    errorMsg = 'Délai d\'attente dépassé';
+                } else if (!isOnline) {
+                    errorMsg = 'Connexion perdue';
+                }
+                
+                if (retryCount < 2 && (status === 'timeout' || xhr.status >= 500) && isOnline) {
+                    setTimeout(() => {
+                        console.log(`Retry envoi message ${retryCount + 1}/3`);
+                        attemptSend(retryCount + 1);
+                    }, Math.pow(2, retryCount) * 1000);
+                } else {
+                    showToast(errorMsg, 'error');
+                    $('#messageInput').val(content);
+                    
+                    if (optimisticMessageId) {
+                        $(`[data-message-id="${optimisticMessageId}"]`).remove();
+                    }
+                }
+            },
+            complete: function() {
+                if (retryCount === 0) {
+                    isLoading = false;
+                    $sendBtn.prop('disabled', false).html(originalHtml);
+                }
+            }
+        });
+    };
+
+    attemptSend();
+});
+
+// Ajouter un message au chat
+function addMessageToChat(messageData, isOptimistic = false) {
+    if (!isOptimistic && $(`[data-message-id="${messageData.id}"]`).length > 0) {
+        return;
+    }
+
+    const messageHtml = createMessageHtml(messageData);
+    const $message = $(messageHtml);
+
+    if (!isOptimistic) {
+        $message.addClass('new');
+    } else {
+        $message.addClass('message-sending');
+    }
+
+    $('#messagesContainer').append($message);
+
+    if (!isOptimistic) {
+        lastMessageId = messageData.id;
+    }
+}
+
+// Créer le HTML d'un message
+function createMessageHtml(msg) {
+    const sentClass = msg.is_sent ? 'sent' : '';
+    const avatar = msg.sender_photo ? 
+        `<img src="${msg.sender_photo}" alt="${msg.sender_name}">` :
+        (msg.sender_name ? msg.sender_name.charAt(0) : '?');
+
+    let fileHtml = '';
+    if (msg.file_url) {
+        if (msg.message_type === 'image') {
+            fileHtml = `
+                <div class="message-file" style="margin-top: 0.5rem;">
+                    <img src="${msg.file_url}" 
+                         style="max-width: 250px; max-height: 300px; border-radius: 10px; cursor: pointer;" 
+                         onclick="showImageModal('${msg.file_url}', '${msg.file_name || 'Image'}')">
+                </div>
+            `;
+        } else if (msg.message_type === 'video') {
+            fileHtml = `
+                <div class="message-file" style="margin-top: 0.5rem;">
+                    <video controls style="max-width: 250px; max-height: 300px; border-radius: 10px;">
+                        <source src="${msg.file_url}" type="video/mp4">
+                    </video>
+                </div>
+            `;
+        } else if (msg.message_type === 'audio') {
+            fileHtml = `
+                <div class="message-file" style="margin-top: 0.5rem;">
+                    <audio controls style="width: 100%; max-width: 300px;">
+                        <source src="${msg.file_url}" type="audio/mpeg">
+                    </audio>
+                </div>
+            `;
+        } else {
+            fileHtml = `
+                <div class="message-file" style="margin-top: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border-radius: 10px;">
+                        <i class="fas fa-file" style="font-size: 1.5rem;"></i>
+                        <div style="flex: 1; min-width: 0;">
+                            <div class="message-file-name" style="font-weight: 500;">${msg.file_name || 'Fichier'}</div>
+                            <div class="message-file-size" style="font-size: 0.8rem; opacity: 0.7;">${msg.file_size || ''}</div>
+                        </div>
+                        <a href="${msg.file_url}" download class="file-download-btn" 
+                           style="padding: 0.5rem; background: rgba(255,255,255,0.2); border-radius: 50%; color: inherit; text-decoration: none;">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    const checkIcon = msg.is_sent ? 
+        (msg.is_read ? '<i class="fas fa-check-double" style="color: #4fc3f7; margin-left: 0.25rem;"></i>' : '<i class="fas fa-check" style="margin-left: 0.25rem;"></i>') : '';
+
+    const editedText = msg.is_edited ? '<small style="opacity: 0.7; font-size: 0.75rem; font-style: italic;">modifié</small>' : '';
+
+    let replyHtml = '';
+    if (msg.reply_to) {
+        replyHtml = `
+            <div class="message-reply" style="padding: 0.5rem; background: rgba(0,0,0,0.1); border-radius: 10px; margin-bottom: 0.5rem; font-size: 0.9rem; border-left: 3px solid #667eea;">
+                <div style="font-weight: 600; margin-bottom: 0.25rem;">${msg.reply_to.sender_name}</div>
+                <div style="opacity: 0.8;">${msg.reply_to.content || 'Message'}</div>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="message ${sentClass}" data-message-id="${msg.id}">
+            <div class="message-avatar">${avatar}</div>
+            <div class="message-content">
+                ${replyHtml}
+                <div class="message-bubble" ${msg.can_edit ? `ondblclick="startEditMessage('${msg.id}', '${(msg.content || '').replace(/'/g, '\\\'')}')"` : ''}>
+                    ${msg.content ? `<div class="message-text">${msg.content.replace(/\n/g, '<br>')}</div>` : ''}
+                    ${fileHtml}
+                    ${editedText}
+                </div>
+                <div class="message-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+                    <div class="message-time" style="font-size: 0.8rem; color: #999;">
+                        ${msg.formatted_time} ${checkIcon}
+                    </div>
+                    <div class="message-actions" style="opacity: 0; transition: opacity 0.3s ease;">
+                        <button onclick="replyToMessage('${msg.id}', '${(msg.content || '').replace(/'/g, '\\\'')}')" class="message-action-btn" title="Répondre">
+                            <i class="fas fa-reply"></i>
+                        </button>
+                        ${msg.can_edit ? `<button onclick="startEditMessage('${msg.id}', '${(msg.content || '').replace(/'/g, '\\\'')}')" class="message-action-btn" title="Modifier"><i class="fas fa-edit"></i></button>` : ''}
+                        <button onclick="addReaction('${msg.id}')" class="message-action-btn" title="Réagir">
+                            <i class="fas fa-smile"></i>
+                        </button>
+                        <button onclick="deleteMessage('${msg.id}')" class="message-action-btn" title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Charger les nouveaux messages
+function loadNewMessages() {
+    if (isLoading || !lastMessageId || !isOnline) return;
+
+    $.ajax({
+        url: `{% url "messagerie:get_messages" conversation.id %}?last_message_id=${lastMessageId}`,
+        timeout: 10000,
+        success: function(response) {
+            consecutiveErrors = 0;
+            if (response.success && response.messages.length > 0) {
+                response.messages.forEach(msg => {
+                    addMessageToChat(msg);
+                });
+                
+                const container = $('#messagesContainer')[0];
+                const isNearBottom = container.scrollTop > container.scrollHeight - container.clientHeight - 100;
+                if (isNearBottom) {
+                    scrollToBottom();
+                }
+                
+                if (!isMobile) {
+                    loadSidebarConversations();
+                }
+            }
+        },
+        error: function(xhr, status, error) {
+            handleAjaxError(xhr, status, error, loadNewMessages);
+        }
+    });
+}
+
+// Marquer tous les messages comme lus
+function markAllAsRead() {
+    $.ajax({
+        url: `{% url "messagerie:mark_conversation_read" conversation.id %}`,
+        method: 'POST',
+        timeout: 10000,
+        error: function(xhr, status, error) {
+            console.log('Erreur marquage lu:', error);
+        }
+    });
+}
+
+// Défiler vers le bas
+function scrollToBottom() {
+    const container = $('#messagesContainer');
+    if (container.length) {
+        requestAnimationFrame(() => {
+            container.scrollTop(container[0].scrollHeight);
+        });
+    }
+}
+
+// Gestion des touches dans l'input
+function handleEnterKey(event) {
+    if (event.key === 'Enter') {
+        if (event.shiftKey) {
+            return true;
+        } else if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            $('#messageForm').submit();
+        } else if (isMobile) {
+            event.preventDefault();
+            $('#messageForm').submit();
+        }
+    }
+}
+
+// Gestion des fichiers
+$('#fileInput').on('change', function() {
+    const file = this.files[0];
+    if (file) {
+        const maxSizes = {
+            'image/': 10 * 1024 * 1024,
+            'video/': 100 * 1024 * 1024,
+            'audio/': 50 * 1024 * 1024,
+            'application/pdf': 25 * 1024 * 1024,
+        };
+
+        let maxSize = 10 * 1024 * 1024;
+        for (const [type, size] of Object.entries(maxSizes)) {
+            if (file.type.startsWith(type) || file.type === type) {
+                maxSize = size;
+                break;
+            }
+        }
+
+        if (file.size > maxSize) {
+            const maxSizeMB = maxSize / (1024 * 1024);
+            showToast(`Le fichier est trop volumineux (max ${maxSizeMB}MB)`, 'error');
+            $(this).val('');
+            return;
+        }
+
+        showFilePreview(file);
+        showToast(`Fichier sélectionné: ${file.name}`, 'info');
+    }
+});
+
+function showFilePreview(file) {
+    const fileSize = formatFileSize(file.size);
+    const fileIcon = getFileIcon(file.type);
+
+    $('#fileName').text(file.name);
+    $('#fileSize').text(fileSize);
+    $('#fileIcon').attr('class', `fas ${fileIcon}`);
+    $('#filePreview').show();
+}
+
+function removeFile() {
+    $('#fileInput').val('');
+    $('#filePreview').hide();
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function getFileIcon(mimeType) {
+    if (mimeType.startsWith('image/')) return 'fa-image';
+    if (mimeType.startsWith('video/')) return 'fa-video';
+    if (mimeType.startsWith('audio/')) return 'fa-music';
+    if (mimeType.includes('pdf')) return 'fa-file-pdf';
+    if (mimeType.includes('word')) return 'fa-file-word';
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'fa-file-excel';
+    return 'fa-file';
+}
+
+// Fonctions de réponse
+function replyToMessage(messageId, content, senderName) {
+    currentReplyToId = messageId;
+    $('#replyToId').val(messageId);
+    $('#replyToUser').text(senderName || 'Message');
+    $('#replyToContent').text(content || 'Message');
+    $('#replyPreview').show();
+    $('#messageInput').focus();
+}
+
+function cancelReply() {
+    currentReplyToId = null;
+    $('#replyToId').val('');
+    $('#replyPreview').hide();
+}
+
+// Fonctions d'édition
+function startEditMessage(messageId, content) {
+    if (isEditing) return;
+
+    isEditing = true;
+    const $message = $(`[data-message-id="${messageId}"]`);
+    const $bubble = $message.find('.message-bubble');
+    const $textDiv = $bubble.find('.message-text');
+
+    $bubble.data('original-content', $textDiv.html());
+
+    const $editInput = $(`
+        <textarea class="edit-input" style="width: 100%; min-height: 40px; padding: 0.5rem; border: 2px solid #667eea; border-radius: 8px; resize: none; font-family: inherit; font-size: 16px;">${content}</textarea>
+        <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+            <button onclick="saveEditMessage('${messageId}')" style="padding: 0.25rem 0.75rem; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">Sauvegarder</button>
+            <button onclick="cancelEditMessage('${messageId}')" style="padding: 0.25rem 0.75rem; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Annuler</button>
+        </div>
+    `);
+
+    $textDiv.replaceWith($editInput);
+    $editInput.find('textarea').focus();
+}
+
+function saveEditMessage(messageId) {
+    const $message = $(`[data-message-id="${messageId}"]`);
+    const $editInput = $message.find('.edit-input');
+    const newContent = $editInput.val().trim();
+
+    if (!newContent) {
+        showToast('Le contenu ne peut pas être vide', 'error');
+        return;
+    }
+
+    $.ajax({
+        url: `/messagerie/message/${messageId}/edit/`,
+        method: 'POST',
+        data: JSON.stringify({content: newContent}),
+        contentType: 'application/json',
+        timeout: 10000,
+        success: function(response) {
+            if (response.success) {
+                const $newTextDiv = $(`<div class="message-text">${newContent.replace(/\n/g, '<br>')}</div>`);
+                $message.find('.edit-input').parent().replaceWith($newTextDiv);
+                
+                if (!$message.find('.message-bubble small').length) {
+                    $message.find('.message-bubble').append('<small style="opacity: 0.7; font-size: 0.75rem; font-style: italic;">modifié</small>');
+                }
+                
+                showToast('Message modifié', 'success');
+            } else {
+                cancelEditMessage(messageId);
+                showToast(response.error || 'Erreur lors de la modification', 'error');
+            }
+        },
+        error: function(xhr, status, error) {
+            cancelEditMessage(messageId);
+            handleAjaxError(xhr, status, error);
+        },
+        complete: function() {
+            isEditing = false;
+        }
+    });
+}
+
+function cancelEditMessage(messageId) {
+    const $message = $(`[data-message-id="${messageId}"]`);
+    const $bubble = $message.find('.message-bubble');
+    const originalContent = $bubble.data('original-content');
+
+    const $originalTextDiv = $(`<div class="message-text">${originalContent}</div>`);
+    $message.find('.edit-input').parent().replaceWith($originalTextDiv);
+
+    isEditing = false;
+}
+
+// Fonctions des modals et menus
+function showImageModal(imageUrl, imageName) {
+    $('#modalImage').attr('src', imageUrl).attr('alt', imageName || 'Image');
+    $('#imageModal').fadeIn();
+}
+
+function closeImageModal() {
+    $('#imageModal').fadeOut();
+}
+
+function toggleEmojiPicker() {
+    $('#emojiPicker').toggle();
+}
+
+function insertEmoji(emoji) {
+    const input = $('#messageInput')[0];
+    const currentValue = input.value;
+    const cursorPosition = input.selectionStart;
+
+    const newValue = currentValue.slice(0, cursorPosition) + emoji + currentValue.slice(input.selectionEnd);
+    input.value = newValue;
+    input.selectionStart = input.selectionEnd = cursorPosition + emoji.length;
+
+    autoResize(input);
+    input.focus();
+    $('#emojiPicker').hide();
+}
+
+function showMobileMenu() {
+    $('#mobileMenu').fadeIn();
+}
+
+function closeMobileMenu() {
+    $('#mobileMenu').fadeOut();
+}
+
+// Fonctions d'action sur les messages
+function deleteMessage(messageId) {
+    if (confirm('Voulez-vous supprimer ce message ?')) {
+        $.ajax({
+            url: `/messagerie/message/${messageId}/delete/`,
+            method: 'POST',
+            timeout: 10000,
+            success: function(response) {
+                if (response.success) {
+                    $(`[data-message-id="${messageId}"]`).fadeOut(() => {
+                        $(`[data-message-id="${messageId}"]`).remove();
+                    });
+                    showToast('Message supprimé', 'success');
+                } else {
+                    showToast('Erreur lors de la suppression', 'error');
+                }
+            },
+            error: function(xhr, status, error) {
+                handleAjaxError(xhr, status, error);
+            }
+        });
+    }
+}
+
+function addReaction(messageId) {
+    const reactions = [
+        {emoji: '👍', type: 'like'},
+        {emoji: '❤️', type: 'love'},
+        {emoji: '😂', type: 'laugh'},
+        {emoji: '😮', type: 'wow'},
+        {emoji: '😢', type: 'sad'},
+        {emoji: '😠', type: 'angry'},
+        {emoji: '🔥', type: 'fire'},
+        {emoji: '👏', type: 'clap'}
+    ];
+
+    const reactionHtml = reactions.map(r => 
+        `<span onclick="sendReaction('${messageId}', '${r.type}')" 
+               style="cursor: pointer; font-size: 1.5rem; padding: 0.5rem; border-radius: 5px; margin: 0.25rem; display: inline-block; transition: background 0.3s;" 
+               onmouseover="this.style.background='#f0f0f0'" 
+               onmouseout="this.style.background='transparent'">${r.emoji}</span>`
+    ).join('');
+
+    const popup = $(`
+        <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 1rem; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 3500; text-align: center;">
+            <h4 style="margin-bottom: 1rem;">Choisir une réaction</h4>
+            <div>${reactionHtml}</div>
+            <button onclick="closeReactionPopup()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer;">Fermer</button>
+        </div>
+        <div onclick="closeReactionPopup()" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3499;"></div>
+    `);
+
+    $('body').append(popup);
+}
+
+function closeReactionPopup() {
+    $('body > div:last-child').remove();
+    $('body > div:last-child').remove();
+}
+
+function sendReaction(messageId, reactionType) {
+    closeReactionPopup();
+
+    $.ajax({
+        url: `/messagerie/message/${messageId}/react/`,
+        method: 'POST',
+        data: JSON.stringify({reaction_type: reactionType}),
+        contentType: 'application/json',
+        timeout: 10000,
+        success: function(response) {
+            if (response.success) {
+                loadNewMessages();
+                showToast('Réaction ajoutée', 'success');
+            }
+        },
+        error: function(xhr, status, error) {
+            handleAjaxError(xhr, status, error);
+        }
+    });
+}
+
+// Fonctions de recherche
+function toggleSearch() {
+    $('#searchBar').toggle();
+    if ($('#searchBar').is(':visible')) {
+        $('#searchInput').focus();
+    }
+}
+
+function searchMessages() {
+    const query = $('#searchInput').val().trim();
+    if (!query) {
+        showToast('Veuillez saisir un terme de recherche', 'error');
+        return;
+    }
+
+    $.ajax({
+        url: '{% url "messagerie:search_messages" %}',
+        data: {
+            q: query,
+            conversation_id: conversationId
+        },
+        timeout: 10000,
+        success: function(response) {
+            if (response.success) {
+                if (response.results.length > 0) {
+                    let resultsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+                    response.results.forEach(result => {
+                        resultsHtml += `
+                            <div style="padding: 0.75rem; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.3s;" 
+                                 onclick="scrollToMessage('${result.message_id}'); closeSearchResults();"
+                                 onmouseover="this.style.background='#f8f9fa'"
+                                 onmouseout="this.style.background='transparent'">
+                                <div style="font-weight: 600; margin-bottom: 0.25rem;">${result.sender_name}</div>
+                                <div style="color: #666; margin-bottom: 0.25rem;">${result.content}</div>
+                                <small style="color: #999;">${result.formatted_time}</small>
+                            </div>
+                        `;
+                    });
+                    resultsHtml += '</div>';
+                    
+                    const searchModal = $(`
+                        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; display: flex; align-items: center; justify-content: center;">
+                            <div style="background: white; padding: 1.5rem; border-radius: 15px; max-width: 500px; width: 90%; max-height: 80vh; overflow: hidden;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                    <h4 style="margin: 0;">Résultats de recherche (${response.results.length})</h4>
+                                    <button onclick="closeSearchResults()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #999;">&times;</button>
+                                </div>
+                                ${resultsHtml}
+                            </div>
+                        </div>
+                    `);
+                    
+                    $('body').append(searchModal);
+                } else {
+                    showToast('Aucun résultat trouvé', 'info');
+                }
+            }
+        },
+        error: function(xhr, status, error) {
+            handleAjaxError(xhr, status, error);
+        }
+    });
+}
+
+function closeSearchResults() {
+    $('body > div:last-child').remove();
+}
+
+function scrollToMessage(messageId) {
+    const $message = $(`[data-message-id="${messageId}"]`);
+    if ($message.length) {
+        $message[0].scrollIntoView({behavior: 'smooth', block: 'center'});
+        $message.addClass('highlight');
+        setTimeout(() => $message.removeClass('highlight'), 2000);
+    }
+}
+
+// Autres fonctions
+function archiveConversation() {
+    if (confirm('Voulez-vous archiver cette conversation ?')) {
+        $.ajax({
+            url: `{% url "messagerie:archive_conversation" conversation.id %}`,
+            method: 'POST',
+            data: JSON.stringify({action: 'archive'}),
+            contentType: 'application/json',
+            timeout: 10000,
+            success: function(response) {
+                if (response.success) {
+                    showToast('Conversation archivée', 'success');
+                    setTimeout(() => {
+                        window.location.href = '{% url "messagerie:conversations" %}';
+                    }, 1000);
+                }
+            },
+            error: function(xhr, status, error) {
+                handleAjaxError(xhr, status, error);
+            }
+        });
+    }
+}
+
+function showConversationInfo() {
+    const infoHtml = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; display: flex; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 2rem; border-radius: 15px; max-width: 400px; width: 90%; text-align: left;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h4 style="margin: 0;">Informations</h4>
+                    <button onclick="closeConversationInfo()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #999;">&times;</button>
+                </div>
+                <div style="space-y: 1rem;">
+                    <div><strong>Participant:</strong> {{ other_participant.prenom }} {{ other_participant.nom }}</div>
+                    <div><strong>Email:</strong> {{ other_participant.utilisateur.email }}</div>
+                    <div><strong>Conversation créée le:</strong> {{ conversation.created_at|date:"d/m/Y à H:i" }}</div>
+                    <div><strong>Dernière activité:</strong> {{ conversation.last_message_at|date:"d/m/Y à H:i"|default:"Aucune" }}</div>
+                </div>
+                <div style="text-align: center; margin-top: 1.5rem;">
+                    <button onclick="closeConversationInfo()" style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">Fermer</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    $('body').append(infoHtml);
+}
+
+function closeConversationInfo() {
+    $('body > div:last-child').remove();
+}
+
+function showConversationSettings() {
+    showToast('Paramètres de conversation (à implémenter)', 'info');
+}
+
+// Gestion de l'état de frappe (typing indicator)
+let typingTimeout;
+let isTyping = false;
+
+$('#messageInput').on('input', function() {
+    if (!isTyping && $(this).val().trim()) {
+        isTyping = true;
+        // Envoyer indicateur de frappe (à implémenter côté serveur)
+    }
+
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+        if (isTyping) {
+            isTyping = false;
+            // Arrêter indicateur de frappe
+        }
+    }, 1000);
+});
+
+// Performance: lazy loading des images dans les messages
+function setupLazyLoading() {
+    if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    img.src = img.dataset.src;
+                    img.classList.remove('lazy');
+                    imageObserver.unobserve(img);
+                }
+            });
+        });
+
+        document.querySelectorAll('img[data-src]').forEach(img => {
+            imageObserver.observe(img);
+        });
+    }
+}
+
+// Nettoyer au déchargement de la page
+$(window).on('beforeunload', function() {
+    stopMessageRefresh();
+
+    if (typingTimeout) clearTimeout(typingTimeout);
+
+    if (window.imageObserver) {
+        window.imageObserver.disconnect();
+    }
+});
+
+// Initialisation finale
+$(document).ready(function() {
+    setupLazyLoading();
+
+    if (window.slowConnection) {
+        $('body').addClass('slow-connection');
+        console.log('Mode connexion lente activé');
+    }
+});
+</script>
+{% endblock %}

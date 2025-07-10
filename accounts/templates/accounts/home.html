@@ -1,0 +1,175 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}AESConnect  - Connectez-vous avec vos pairs{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="text-center mb-5 animate-slide-in">
+    <div class="mb-4">
+        <i class="bi bi-mortarboard-fill icon-gradient" style="font-size: 4rem;"></i>
+    </div>
+    <h1 class="display-4 fw-bold mb-3 text-dark">
+        Bienvenue sur <span class="text-primary">AESConnect </span>
+    </h1>
+    <p class="lead text-muted mb-4 mx-auto" style="max-width: 600px;">
+        La plateforme qui connecte les étudiants du Burkina Faso. 
+        Trouvez vos pairs, échangez et construisez votre réseau académique.
+    </p>
+    
+    {% if not user.is_authenticated %}
+        <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg px-4">
+                <i class="bi bi-person-plus me-2"></i>
+                Rejoindre
+            </a>
+            <a href="{% url 'accounts:login' %}" class="btn btn-outline-primary btn-lg px-4">
+                <i class="bi bi-box-arrow-in-right me-2"></i>
+                Se connecter
+            </a>
+        </div>
+    {% else %}
+        <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <a href="{% url 'accounts:profile' %}" class="btn btn-primary btn-lg px-4">
+                <i class="bi bi-person-circle me-2"></i>
+                Mon Profil
+            </a>
+            <a href="{% url 'relations:page' %}" class="btn btn-outline-primary btn-lg px-4">
+                <i class="bi bi-people me-2"></i>
+                Découvrir
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Stats Section -->
+<div class="row mb-5">
+    <div class="col-md-4 mb-4">
+        <div class="stat-card">
+            <div class="stat-number counter" data-target="{{ stats.total_etudiants|default:1234 }}">0</div>
+            <div class="stat-label">
+                <i class="bi bi-people-fill me-1"></i>
+                Étudiants connectés
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="stat-card">
+            <div class="stat-number counter" data-target="{{ stats.total_universites|default:15 }}">0</div>
+            <div class="stat-label">
+                <i class="bi bi-building me-1"></i>
+                Universités représentées
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="stat-card">
+            <div class="stat-number counter" data-target="{{ stats.total_relations|default:456 }}">0</div>
+            <div class="stat-label">
+                <i class="bi bi-heart me-1"></i>
+                Connexions établies
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="row mb-5">
+    <div class="col-12 text-center mb-4">
+        <h2 class="fw-bold mb-3">Fonctionnalités</h2>
+        <p class="text-muted">Tout ce dont vous avez besoin pour votre parcours académique</p>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <div class="mb-3">
+                    <i class="bi bi-search text-primary" style="font-size: 2.5rem;"></i>
+                </div>
+                <h5 class="fw-bold mb-3">Trouvez vos pairs</h5>
+                <p class="text-muted">Découvrez des étudiants de votre université, filière ou ville facilement.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <div class="mb-3">
+                    <i class="bi bi-chat-dots text-primary" style="font-size: 2.5rem;"></i>
+                </div>
+                <h5 class="fw-bold mb-3">Communiquez</h5>
+                <p class="text-muted">Échangez avec vos amis grâce à notre messagerie intégrée.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <div class="mb-3">
+                    <i class="bi bi-shield-check text-primary" style="font-size: 2.5rem;"></i>
+                </div>
+                <h5 class="fw-bold mb-3">Sécurisé</h5>
+                <p class="text-muted">Vos données sont protégées. Contrôlez votre confidentialité.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CTA Section -->
+{% if not user.is_authenticated %}
+<div class="text-center">
+    <div class="card">
+        <div class="card-body p-5">
+            <h3 class="fw-bold mb-3">Prêt à commencer ?</h3>
+            <p class="text-muted mb-4">Rejoignez la communauté étudiante du Burkina Faso</p>
+            <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg px-5">
+                <i class="bi bi-rocket-takeoff me-2"></i>
+                Créer mon compte
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation des compteurs
+    const counters = document.querySelectorAll('.counter');
+    
+    const animateCounter = (counter) => {
+        const target = parseInt(counter.getAttribute('data-target'));
+        const increment = target / 60; // Animation sur 1 seconde à 60fps
+        let current = 0;
+        
+        const updateCounter = () => {
+            if (current < target) {
+                current += increment;
+                counter.textContent = Math.ceil(current);
+                requestAnimationFrame(updateCounter);
+            } else {
+                counter.textContent = target;
+            }
+        };
+        
+        updateCounter();
+    };
+    
+    // Observer pour déclencher l'animation
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateCounter(entry.target);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.5 });
+    
+    counters.forEach(counter => {
+        observer.observe(counter);
+    });
+});
+</script>
+{% endblock %}

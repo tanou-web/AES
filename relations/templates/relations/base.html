@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Relations{% endblock %} - StudyConnect</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .nav-center {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        
+        .nav-center a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .nav-center a:hover, .nav-center a.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .nav-text {
+            display: inline;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4757;
+            color: white;
+            border-radius: 50%;
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            min-width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* === MENU UTILISATEUR === */
+        .user-menu {
+            position: relative;
+        }
+        
+        .user-menu-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .user-menu-toggle:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.05);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            overflow: hidden;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            font-size: 0.9rem;
+        }
+        
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .user-menu-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            backdrop-filter: blur(10px);
+            min-width: 280px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1001;
+            border: 1px solid rgba(255,255,255,0.2);
+            margin-top: 0.5rem;
+        }
+        
+        .user-menu-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .user-menu-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #f1f3f4;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+        
+        .user-menu-info h4 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1.1rem;
+        }
+        
+        .user-menu-info p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+        
+        .user-menu-body {
+            padding: 0.5rem 0;
+        }
+        
+        .user-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s ease;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        
+        .user-menu-item:hover {
+            background: rgba(102, 126, 234, 0.05);
+            color: #667eea;
+            transform: translateX(5px);
+        }
+        
+        .user-menu-item i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        .user-menu-item.danger {
+            color: #ff4757;
+        }
+        
+        .user-menu-item.danger:hover {
+            background: rgba(255, 71, 87, 0.05);
+            color: #ff4757;
+        }
+        
+        .user-menu-divider {
+            height: 1px;
+            background: #f1f3f4;
+            margin: 0.5rem 0;
+        }
+        
+        /* === OVERLAY POUR FERMER LE MENU === */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .menu-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .card-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 1.5rem 2rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .card-body {
+            padding: 2rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            transform: translateY(0);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #2ed573, #1abc9c);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #ff4757, #ff3838);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .search-filter-bar {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .search-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .filter-select {
+            padding: 0.75rem 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            background: white;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-select:focus {
+            border-color: #667eea;
+        }
+        
+        .user-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .user-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 1px solid #f1f3f4;
+        }
+        
+        .user-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+        
+        .user-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            overflow: hidden;
+        }
+        
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .user-info h4 {
+            margin: 0;
+            color: #333;
+            font-size: 1.1rem;
+        }
+        
+        .user-info p {
+            margin: 0.25rem 0 0 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .user-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .user-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .user-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            z-index: 3000;
+            animation: slideInRight 0.3s ease;
+        }
+        
+        .toast-success { background: #2ed573; }
+        .toast-error { background: #ff4757; }
+        .toast-info { background: #3742fa; }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 2rem 0;
+        }
+        
+        .pagination a, .pagination span {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            background: white;
+            color: #667eea;
+            border: 1px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+        
+        .pagination a:hover, .pagination .current {
+            background: #667eea;
+            color: white;
+        }
+        
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .nav-container {
+                padding: 0 1rem;
+            }
+            
+            .logo {
+                font-size: 1.4rem;
+            }
+            
+            .nav-center {
+                gap: 0.5rem;
+            }
+            
+            .nav-center a {
+                font-size: 1.2rem;
+                padding: 0.5rem;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .nav-text {
+                display: none;
+            }
+            
+            .user-avatar {
+                width: 35px;
+                height: 35px;
+                font-size: 0.8rem;
+            }
+            
+            .user-menu-dropdown {
+                right: -1rem;
+                min-width: 260px;
+                max-width: calc(100vw - 2rem);
+            }
+            
+            .user-menu-header {
+                padding: 1rem;
+            }
+            
+            .user-menu-info h4 {
+                font-size: 1rem;
+            }
+            
+            .user-menu-info p {
+                font-size: 0.85rem;
+            }
+            
+            .user-menu-item {
+                padding: 0.75rem 1rem;
+            }
+            
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .search-filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-input {
+                min-width: auto;
+            }
+            
+            .user-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{% url 'relations:page' %}" class="logo">
+                <i class="fas fa-graduation-cap"></i> AESConnect
+            </a>
+            
+            <ul class="nav-center">
+                <li>
+                    <a href="{% url 'relations:page' %}" {% if request.resolver_match.url_name == 'page' %}class="active"{% endif %}>
+                        <i class="fas fa-users"></i> 
+                        <span class="nav-text">Relations</span>
+                        {% if notifications_non_lues > 0 %}
+                            <span class="notification-badge">{{ notifications_non_lues }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'messagerie:conversations' %}">
+                        <i class="fas fa-comments"></i> 
+                        <span class="nav-text">Messages</span>
+                        {% if total_unread > 0 %}
+                            <span class="notification-badge">{{ total_unread }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'relations:notifications' %}">
+                        <i class="fas fa-bell"></i> 
+                        <span class="nav-text">Notifications</span>
+                    </a>
+                </li>
+            
+            </ul>
+            
+            <!-- Menu utilisateur -->
+            {% if user.is_authenticated %}
+            <div class="user-menu">
+                <button class="user-menu-toggle" onclick="toggleUserMenu()">
+                    <div class="user-avatar">
+                        {% if user.etudiant.photo %}
+                            <img src="{{ user.etudiant.photo.url }}" alt="Avatar">
+                        {% else %}
+                            {{ user.etudiant.prenom|first }}{{ user.etudiant.nom|first }}
+                        {% endif %}
+                    </div>
+                    <i class="fas fa-chevron-down" style="font-size: 0.8rem; margin-left: 0.25rem; color: #667eea;"></i>
+                </button>
+                
+                <div class="user-menu-dropdown" id="userMenuDropdown">
+                    <div class="user-menu-header">
+                        <div class="user-menu-info">
+                            <h4>{{ user.etudiant.get_full_name }}</h4>
+                            <p>{{ user.email }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="user-menu-body">
+                        <a href="{% url 'accounts:profile' %}" class="user-menu-item">
+                            <i class="fas fa-user"></i>
+                            <span>Mon profil</span>
+                        </a>
+                        
+                        <a href="{% url 'accounts:edit_profile' %}" class="user-menu-item">
+                            <i class="fas fa-edit"></i>
+                            <span>Modifier le profil</span>
+                        </a>
+                        
+                        <div class="user-menu-divider"></div>
+                        
+                        <a href="{% url 'relations:statistiques' %}" class="user-menu-item">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Statistiques</span>
+                        </a>
+                        
+                        <a href="{% url 'relations:notifications' %}" class="user-menu-item">
+                            <i class="fas fa-bell"></i>
+                            <span>Notifications</span>
+                            {% if notifications_non_lues > 0 %}
+                                <span class="notification-badge" style="margin-left: auto;">{{ notifications_non_lues }}</span>
+                            {% endif %}
+                        </a>
+                        
+                        <div class="user-menu-divider"></div>
+                        
+                        <a href="{% url 'accounts:change_password' %}" class="user-menu-item">
+                            <i class="fas fa-lock"></i>
+                            <span>Changer le mot de passe</span>
+                        </a>
+                        
+                        <a href="{% url 'accounts:download_data' %}" class="user-menu-item">
+                            <i class="fas fa-download"></i>
+                            <span>Télécharger mes données</span>
+                        </a>
+                        
+                        <div class="user-menu-divider"></div>
+                        
+                        <a href="{% url 'accounts:logout' %}" class="user-menu-item danger">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Se déconnecter</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="user-menu">
+                <button class="user-menu-toggle" onclick="toggleUserMenu()">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <i class="fas fa-chevron-down" style="font-size: 0.8rem; margin-left: 0.25rem; color: #667eea;"></i>
+                </button>
+                
+                <div class="user-menu-dropdown" id="userMenuDropdown">
+                    <div class="user-menu-body">
+                        <a href="{% url 'accounts:login' %}" class="user-menu-item">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span>Se connecter</span>
+                        </a>
+                        
+                        <a href="{% url 'accounts:register' %}" class="user-menu-item">
+                            <i class="fas fa-user-plus"></i>
+                            <span>S'inscrire</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Overlay pour fermer le menu -->
+    <div class="menu-overlay" id="menuOverlay" onclick="closeUserMenu()"></div>
+
+    <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="toast toast-{{ message.tags }} animate__animated animate__fadeInRight">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        // Masquer les toasts automatiquement
+        setTimeout(() => {
+            $('.toast').fadeOut();
+        }, 5000);
+
+        // CSRF Token pour les requêtes AJAX
+        const csrfToken = '{{ csrf_token }}';
+        
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", csrfToken);
+                }
+            }
+        });
+
+        // Variables globales
+        let userMenuOpen = false;
+
+        // Gestion du menu utilisateur
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userMenuDropdown');
+            const overlay = document.getElementById('menuOverlay');
+            
+            if (userMenuOpen) {
+                closeUserMenu();
+            } else {
+                dropdown.classList.add('active');
+                overlay.classList.add('active');
+                userMenuOpen = true;
+            }
+        }
+
+        function closeUserMenu() {
+            const dropdown = document.getElementById('userMenuDropdown');
+            const overlay = document.getElementById('menuOverlay');
+            
+            dropdown.classList.remove('active');
+            overlay.classList.remove('active');
+            userMenuOpen = false;
+        }
+
+        // Fermer le menu en cliquant en dehors
+        document.addEventListener('click', function(event) {
+            const userMenu = document.querySelector('.user-menu');
+            if (!userMenu.contains(event.target) && userMenuOpen) {
+                closeUserMenu();
+            }
+        });
+
+        // Gestion du clavier (ESC pour fermer le menu)
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && userMenuOpen) {
+                closeUserMenu();
+            }
+        });
+
+        // Fonction utilitaire pour afficher les toasts
+        function showToast(message, type = 'info') {
+            const toast = $(`<div class="toast toast-${type} animate__animated animate__fadeInRight">${message}</div>`);
+            $('body').append(toast);
+            setTimeout(() => toast.fadeOut(() => toast.remove()), 5000);
+        }
+
+        // Animation des cartes au scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate__animated', 'animate__fadeInUp');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.user-card, .card').forEach(card => {
+            observer.observe(card);
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

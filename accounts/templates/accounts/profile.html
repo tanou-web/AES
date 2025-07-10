@@ -1,0 +1,321 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}{{ etudiant.get_full_name }} - Mon Profil{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Colonne principale -->
+    <div class="col-lg-8">
+        <!-- Profil principal -->
+        <div class="card mb-4 animate-slide-in">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        {% if etudiant.photo %}
+                            <img src="{{ etudiant.photo.url }}" alt="Photo" 
+                                 class="rounded-circle border" style="width: 100px; height: 100px; object-fit: cover;">
+                        {% else %}
+                            <div class="rounded-circle d-flex align-items-center justify-content-center border"
+                                 style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));">
+                                <span class="text-white h3 mb-0">{{ etudiant.prenom|first }}{{ etudiant.nom|first }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col">
+                        <h2 class="mb-2">{{ etudiant.get_full_name }}</h2>
+                        <p class="text-muted mb-1">
+                            <i class="bi bi-envelope me-2"></i>{{ etudiant.utilisateur.email }}
+                        </p>
+                        {% if etudiant.filiere %}
+                        <p class="text-muted mb-1">
+                            <i class="bi bi-mortarboard me-2"></i>{{ etudiant.filiere }}
+                        </p>
+                        {% endif %}
+                        {% if etudiant.universite %}
+                        <p class="text-muted mb-3">
+                            <i class="bi bi-building me-2"></i>{{ etudiant.universite }}
+                        </p>
+                        {% endif %}
+                        
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="{% url 'accounts:edit_profile' %}" class="btn btn-primary">
+                                <i class="bi bi-pencil me-2"></i>Modifier
+                            </a>
+                            <a href="{% url 'relations:page' %}" class="btn btn-outline-primary">
+                                <i class="bi bi-people me-2"></i>Relations
+                            </a>
+                            <a href="{% url 'messagerie:conversations' %}" class="btn btn-outline-primary">
+                                <i class="bi bi-chat me-2"></i>Messages
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="card mb-4 animate-slide-in">
+            <div class="card-body">
+                <h5 class="card-title mb-4">
+                    <i class="bi bi-bar-chart me-2"></i>Statistiques
+                </h5>
+                <div class="row text-center">
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 rounded-3" style="background: rgba(102, 126, 234, 0.1);">
+                            <i class="bi bi-people text-primary" style="font-size: 2rem;"></i>
+                            <h4 class="mt-2 mb-1 text-primary">{{ relations_stats.amis }}</h4>
+                            <small class="text-muted">Amis</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 rounded-3" style="background: rgba(16, 185, 129, 0.1);">
+                            <i class="bi bi-person-plus" style="font-size: 2rem; color: var(--accent-color);"></i>
+                            <h4 class="mt-2 mb-1" style="color: var(--accent-color);">{{ relations_stats.demandes_recues }}</h4>
+                            <small class="text-muted">Demandes reçues</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 rounded-3" style="background: rgba(245, 158, 11, 0.1);">
+                            <i class="bi bi-send" style="font-size: 2rem; color: var(--warning-color);"></i>
+                            <h4 class="mt-2 mb-1" style="color: var(--warning-color);">{{ relations_stats.demandes_envoyees }}</h4>
+                            <small class="text-muted">Demandes envoyées</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Amis récents -->
+        {% if amis_recents %}
+        <div class="card animate-slide-in">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-people me-2"></i>Amis récents
+                    </h5>
+                    <a href="{% url 'relations:page' %}" class="btn btn-sm btn-outline-primary">
+                        Voir tous
+                    </a>
+                </div>
+                <div class="row">
+                    {% for ami in amis_recents %}
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-center p-3 rounded-3" style="background: var(--gray-100);">
+                            {% if ami.photo %}
+                                <img src="{{ ami.photo.url }}" alt="{{ ami.get_full_name }}" 
+                                     class="rounded-circle me-3" style="width: 48px; height: 48px; object-fit: cover;">
+                            {% else %}
+                                <div class="rounded-circle d-flex align-items-center justify-content-center me-3"
+                                     style="width: 48px; height: 48px; background: var(--primary-color);">
+                                    <span class="text-white fw-bold small">{{ ami.prenom|first }}{{ ami.nom|first }}</span>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <h6 class="mb-1">
+                                    <a href="{% url 'accounts:view_profile' ami.id %}" 
+                                       class="text-decoration-none">{{ ami.get_full_name }}</a>
+                                </h6>
+                                <small class="text-muted">{{ ami.filiere|default:"Étudiant" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Informations -->
+        <div class="card mb-4 animate-slide-in">
+            <div class="card-body">
+                <h5 class="card-title mb-4">
+                    <i class="bi bi-info-circle me-2"></i>Informations
+                </h5>
+                <div class="space-y-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-card-text text-muted me-3"></i>
+                        <div>
+                            <small class="text-muted d-block">INE</small>
+                            <span>{{ etudiant.ine }}</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-telephone text-muted me-3"></i>
+                        <div>
+                            <small class="text-muted d-block">Téléphone</small>
+                            <span>{{ etudiant.telephone }}</span>
+                        </div>
+                    </div>
+                    {% if etudiant.date_naissance %}
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-calendar text-muted me-3"></i>
+                        <div>
+                            <small class="text-muted d-block">Date de naissance</small>
+                            <span>{{ etudiant.date_naissance|date:"d F Y" }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-gender-ambiguous text-muted me-3"></i>
+                        <div>
+                            <small class="text-muted d-block">Genre</small>
+                            <span>{{ etudiant.get_genre_display }}</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-geo-alt text-muted me-3"></i>
+                        <div>
+                            <small class="text-muted d-block">Ville</small>
+                            <span>{{ etudiant.ville }}</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-calendar3 text-muted me-3"></i>
+                        <div>
+                            <small class="text-muted d-block">Année universitaire</small>
+                            <span>{{ etudiant.annee_universitaire }}</span>
+                        </div>
+                    </div>
+                    {% if etudiant.situation %}
+                    <div class="d-flex align-items-start mb-3">
+                        <i class="bi bi-chat-left-text text-muted me-3 mt-1"></i>
+                        <div>
+                            <small class="text-muted d-block">Situation</small>
+                            <span>{{ etudiant.situation }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Confidentialité -->
+        <div class="card mb-4 animate-slide-in">
+            <div class="card-body">
+                <h5 class="card-title mb-4">
+                    <i class="bi bi-shield-check me-2"></i>Confidentialité
+                </h5>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold">Profil privé</div>
+                        <small class="text-muted">
+                            {% if etudiant.profil_prive %}
+                                Seuls vos amis voient votre profil
+                            {% else %}
+                                Profil visible par tous
+                            {% endif %}
+                        </small>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" 
+                               {% if etudiant.profil_prive %}checked{% endif %}
+                               id="profilPriveSwitch" onchange="toggleProfilPrive()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card mb-4 animate-slide-in">
+            <div class="card-body">
+                <h5 class="card-title mb-4">
+                    <i class="bi bi-lightning me-2"></i>Actions rapides
+                </h5>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'accounts:change_password' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-shield-lock me-2"></i>Sécurité
+                    </a>
+                    <a href="{% url 'relations:page' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-search me-2"></i>Découvrir
+                    </a>
+                    <button onclick="downloadData()" class="btn btn-outline-primary">
+                        <i class="bi bi-download me-2"></i>Mes données
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activité -->
+        <div class="card animate-slide-in">
+            <div class="card-body">
+                <h5 class="card-title mb-4">
+                    <i class="bi bi-clock me-2"></i>Activité récente
+                </h5>
+                <div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker" style="background: var(--primary-color);"></div>
+                        <div>
+                            <small class="text-muted">Aujourd'hui</small>
+                            <div class="fw-medium">Connexion au profil</div>
+                        </div>
+                    </div>
+                    {% if relations_stats.amis > 0 %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker" style="background: var(--accent-color);"></div>
+                        <div>
+                            <small class="text-muted">Cette semaine</small>
+                            <div class="fw-medium">{{ relations_stats.amis }} ami(s) connecté(s)</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker" style="background: var(--gray-400);"></div>
+                        <div>
+                            <small class="text-muted">Inscription</small>
+                            <div class="fw-medium">Compte créé</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleProfilPrive() {
+    const switchElement = document.getElementById('profilPriveSwitch');
+    const isPrivate = switchElement.checked;
+    
+    switchElement.disabled = true;
+    
+    makeAjaxRequest('/accounts/api/toggle-privacy/', {
+        method: 'POST',
+        body: JSON.stringify({ profil_prive: isPrivate })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const explanationText = document.querySelector('.text-muted');
+            explanationText.textContent = isPrivate ? 
+                'Seuls vos amis voient votre profil' : 
+                'Profil visible par tous';
+            showToast('Paramètres mis à jour', 'success');
+        } else {
+            switchElement.checked = !isPrivate;
+            showToast('Erreur lors de la mise à jour', 'error');
+        }
+    })
+    .catch(error => {
+        switchElement.checked = !isPrivate;
+        showToast('Erreur de connexion', 'error');
+    })
+    .finally(() => {
+        switchElement.disabled = false;
+    });
+}
+
+function downloadData() {
+    showToast('Préparation de vos données...', 'info');
+    
+    setTimeout(() => {
+        showToast('Vos données seront bientôt disponibles par email', 'success');
+    }, 2000);
+}
+</script>
+{% endblock %}
+                

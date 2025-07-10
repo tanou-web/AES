@@ -1,0 +1,274 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Inscription - AESConnect {% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="card animate-slide-in">
+            <div class="card-body p-5">
+                <!-- Progress -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-primary rounded-pill px-3 py-2">Étape 1/2</span>
+                        <small class="text-muted">Création du compte</small>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar" style="width: 50%"></div>
+                    </div>
+                </div>
+
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <div class="mb-3">
+                        <i class="bi bi-person-plus-fill icon-gradient" style="font-size: 3rem;"></i>
+                    </div>
+                    <h2 class="fw-bold mb-2">Rejoignez AESConnect </h2>
+                    <p class="text-muted">Créez votre compte en quelques étapes</p>
+                </div>
+
+                <!-- Form -->
+                <form method="post" id="registerForm">
+                    {% csrf_token %}
+                    
+                    <!-- Email -->
+                    <div class="mb-4">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">
+                            <i class="bi bi-envelope me-2"></i>{{ form.email.label }}
+                        </label>
+                        {{ form.email }}
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Utilisez votre email universitaire de préférence
+                        </div>
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">
+                                <i class="bi bi-exclamation-circle me-1"></i>
+                                {{ form.email.errors|join:", " }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Password -->
+                    <div class="mb-4">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">
+                            <i class="bi bi-lock me-2"></i>{{ form.password.label }}
+                        </label>
+                        <div class="input-group">
+                            {{ form.password }}
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword1">
+                                <i class="bi bi-eye" id="toggleIcon1"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            Au moins 8 caractères avec majuscules, minuscules et chiffres
+                        </div>
+                        <!-- Strength indicator -->
+                        <div id="passwordStrength" class="mt-2" style="display: none;">
+                            <div class="progress" style="height: 4px;">
+                                <div id="strengthBar" class="progress-bar" style="width: 0%"></div>
+                            </div>
+                            <small id="strengthText" class="text-muted"></small>
+                        </div>
+                        {% if form.password.errors %}
+                            <div class="invalid-feedback d-block">
+                                <i class="bi bi-exclamation-circle me-1"></i>
+                                {{ form.password.errors|join:", " }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="mb-4">
+                        <label for="{{ form.confirm_password.id_for_label }}" class="form-label">
+                            <i class="bi bi-shield-check me-2"></i>{{ form.confirm_password.label }}
+                        </label>
+                        <div class="input-group">
+                            {{ form.confirm_password }}
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword2">
+                                <i class="bi bi-eye" id="toggleIcon2"></i>
+                            </button>
+                        </div>
+                        <div id="passwordMatch" class="mt-2" style="display: none;">
+                            <small id="matchText"></small>
+                        </div>
+                        {% if form.confirm_password.errors %}
+                            <div class="invalid-feedback d-block">
+                                <i class="bi bi-exclamation-circle me-1"></i>
+                                {{ form.confirm_password.errors|join:", " }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Errors -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            {{ form.non_field_errors|join:", " }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Terms -->
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="acceptTerms" required>
+                            <label class="form-check-label" for="acceptTerms">
+                                J'accepte les <a href="#" class="text-decoration-none">conditions d'utilisation</a> 
+                                et la <a href="#" class="text-decoration-none">politique de confidentialité</a>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="d-grid mb-4">
+                        <button type="submit" class="btn btn-primary btn-lg" id="nextBtn">
+                            <i class="bi bi-arrow-right me-2"></i>
+                            Continuer
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Link -->
+                <div class="text-center">
+                    <p class="text-muted">
+                        Déjà inscrit ? 
+                        <a href="{% url 'accounts:login' %}" class="text-decoration-none fw-semibold text-primary">
+                            Se connecter
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordField = document.querySelector('#id_password');
+    const confirmField = document.querySelector('#id_confirm_password');
+    const togglePassword1 = document.getElementById('togglePassword1');
+    const togglePassword2 = document.getElementById('togglePassword2');
+    const toggleIcon1 = document.getElementById('toggleIcon1');
+    const toggleIcon2 = document.getElementById('toggleIcon2');
+    const strengthIndicator = document.getElementById('passwordStrength');
+    const strengthBar = document.getElementById('strengthBar');
+    const strengthText = document.getElementById('strengthText');
+    const matchIndicator = document.getElementById('passwordMatch');
+    const matchText = document.getElementById('matchText');
+    const registerForm = document.getElementById('registerForm');
+    const nextBtn = document.getElementById('nextBtn');
+
+    // Toggle password visibility
+    function togglePasswordVisibility(field, icon) {
+        const type = field.getAttribute('type') === 'password' ? 'text' : 'password';
+        field.setAttribute('type', type);
+        
+        if (type === 'text') {
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+
+    if (togglePassword1 && passwordField) {
+        togglePassword1.addEventListener('click', () => togglePasswordVisibility(passwordField, toggleIcon1));
+    }
+    if (togglePassword2 && confirmField) {
+        togglePassword2.addEventListener('click', () => togglePasswordVisibility(confirmField, toggleIcon2));
+    }
+
+    // Password strength
+    if (passwordField) {
+        passwordField.addEventListener('input', function() {
+            const password = this.value;
+            const strength = checkPasswordStrength(password);
+            
+            if (password.length > 0) {
+                strengthIndicator.style.display = 'block';
+                strengthBar.style.width = strength.percentage + '%';
+                strengthBar.className = 'progress-bar ' + strength.class;
+                strengthText.textContent = strength.text;
+                strengthText.className = strength.textClass;
+            } else {
+                strengthIndicator.style.display = 'none';
+            }
+        });
+    }
+
+    // Password match
+    function checkPasswordMatch() {
+        const password = passwordField ? passwordField.value : '';
+        const confirm = confirmField ? confirmField.value : '';
+        
+        if (confirm.length > 0) {
+            matchIndicator.style.display = 'block';
+            if (password === confirm) {
+                matchText.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>Les mots de passe correspondent';
+                matchText.className = 'text-success';
+            } else {
+                matchText.innerHTML = '<i class="bi bi-x-circle-fill text-danger me-1"></i>Les mots de passe ne correspondent pas';
+                matchText.className = 'text-danger';
+            }
+        } else {
+            matchIndicator.style.display = 'none';
+        }
+    }
+
+    if (confirmField) {
+        confirmField.addEventListener('input', checkPasswordMatch);
+    }
+    if (passwordField) {
+        passwordField.addEventListener('input', checkPasswordMatch);
+    }
+
+    // Password strength checker
+    function checkPasswordStrength(password) {
+        let strength = 0;
+        
+        if (password.length >= 8) strength++;
+        if (/[a-z]/.test(password)) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+        const levels = [
+            { text: 'Très faible', class: 'bg-danger', textClass: 'text-danger' },
+            { text: 'Faible', class: 'bg-warning', textClass: 'text-warning' },
+            { text: 'Moyen', class: 'bg-info', textClass: 'text-info' },
+            { text: 'Fort', class: 'bg-success', textClass: 'text-success' },
+            { text: 'Très fort', class: 'bg-success', textClass: 'text-success' }
+        ];
+
+        const level = Math.min(strength, 4);
+        return {
+            percentage: Math.min(strength * 20, 100),
+            ...levels[level]
+        };
+    }
+
+    // Form submission
+    if (registerForm && nextBtn) {
+        registerForm.addEventListener('submit', function(e) {
+            const acceptTerms = document.getElementById('acceptTerms');
+            if (!acceptTerms.checked) {
+                e.preventDefault();
+                showToast('Veuillez accepter les conditions d\'utilisation', 'warning');
+                return;
+            }
+
+            setLoadingState(nextBtn, true);
+        });
+    }
+
+    // Auto-focus
+    const emailField = document.querySelector('#id_email');
+    if (emailField) {
+        emailField.focus();
+    }
+});
+</script>
+{% endblock %}

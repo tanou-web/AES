@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>{% block title %}StudyConnect{% endblock %} - StudyConnect</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+        
+        /* === NAVBAR RESPONSIVE === */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            height: 70px;
+        }
+        
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .nav-center {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        
+        .nav-center a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .nav-center a:hover, .nav-center a.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .nav-text {
+            display: inline;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4757;
+            color: white;
+            border-radius: 50%;
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            min-width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* === MENU PARAMÈTRES === */
+        .user-menu {
+            position: relative;
+        }
+        
+        .user-menu-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .user-menu-toggle:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.05);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            overflow: hidden;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+        }
+        
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .user-menu-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            min-width: 280px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1001;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .user-menu-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .user-menu-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #f1f3f4;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+        
+        .user-menu-info h4 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1.1rem;
+        }
+        
+        .user-menu-info p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+        
+        .user-menu-body {
+            padding: 0.5rem 0;
+        }
+        
+        .user-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s ease;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+        }
+        
+        .user-menu-item:hover {
+            background: rgba(102, 126, 234, 0.05);
+            color: #667eea;
+            transform: translateX(5px);
+        }
+        
+        .user-menu-item i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        .user-menu-item.danger {
+            color: #ff4757;
+        }
+        
+        .user-menu-item.danger:hover {
+            background: rgba(255, 71, 87, 0.05);
+            color: #ff4757;
+        }
+        
+        .user-menu-divider {
+            height: 1px;
+            background: #f1f3f4;
+            margin: 0.5rem 0;
+        }
+        
+        /* === OVERLAY POUR FERMER LE MENU === */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .menu-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* === CONTAINER === */
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .card-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 1.5rem 2rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .card-body {
+            padding: 2rem;
+        }
+        
+        /* === RESPONSIVE MOBILE === */
+        @media (max-width: 768px) {
+            body {
+                margin: 0;
+                padding: 0;
+                overflow-x: hidden;
+            }
+            
+            /* Navbar mobile */
+            .navbar {
+                position: fixed;
+                top: 0;
+                width: 100%;
+                z-index: 1000;
+                padding: 0.5rem 0;
+                height: 60px;
+            }
+            
+            .nav-container {
+                padding: 0 1rem;
+            }
+            
+            .logo {
+                font-size: 1.4rem;
+            }
+            
+            .nav-center {
+                gap: 0.5rem;
+            }
+            
+            .nav-center a {
+                font-size: 1.2rem;
+                padding: 0.5rem;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .nav-text {
+                display: none;
+            }
+            
+            /* Menu utilisateur mobile */
+            .user-avatar {
+                width: 35px;
+                height: 35px;
+                font-size: 0.9rem;
+            }
+            
+            .user-menu-dropdown {
+                right: -1rem;
+                min-width: 260px;
+                max-width: calc(100vw - 2rem);
+            }
+            
+            .user-menu-header {
+                padding: 1rem;
+            }
+            
+            .user-menu-info h4 {
+                font-size: 1rem;
+            }
+            
+            .user-menu-info p {
+                font-size: 0.85rem;
+            }
+            
+            .user-menu-item {
+                padding: 0.75rem 1rem;
+            }
+            
+            /* Container mobile */
+            .container {
+                margin: 0;
+                padding: 0 1rem;
+                padding-top: 70px;
+            }
+            
+            .card {
+                border-radius: 15px;
+                margin-bottom: 1rem;
+            }
+            
+            /* Safe area pour iPhone X+ */
+            @supports (padding: max(0px)) {
+                .container {
+                    padding-top: max(70px, env(safe-area-inset-top) + 60px);
+                }
+                
+                .navbar {
+                    height: max(60px, env(safe-area-inset-top) + 60px);
+                    padding-top: env(safe-area-inset-top);
+                }
+            }
+        }
+        
+        /* === TABLET === */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .container {
+                padding: 0 1rem;
+                margin-top: 1rem;
+            }
+            
+            .user-menu-dropdown {
+                min-width: 300px;
+            }
+        }
+        
+        /* === ANIMATIONS === */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+        
+        /* === TOAST === */
+        .toast {
+            position: fixed;
+            top: 90px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            z-index: 3000;
+            animation: slideInRight 0.3s ease;
+            max-width: 400px;
+            word-wrap: break-word;
+        }
+        
+        .toast-success { background: #2ed573; }
+        .toast-error { background: #ff4757; }
+        .toast-info { background: #3742fa; }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        
+        /* === BOUTONS === */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #2ed573, #1abc9c);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #ff4757, #ff3838);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{% url 'accounts:home' %}" class="logo">
+                <i class="fas fa-graduation-cap"></i> 
+                <span class="nav-text">StudyConnect</span>
+            </a>
+            
+            <ul class="nav-center">
+                <li>
+                    <a href="{% url 'accounts:profile' %}" 
+                       {% if request.resolver_match.url_name == 'profile' %}class="active"{% endif %}>
+                        <i class="fas fa-user"></i> 
+                        <span class="nav-text">Profil</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'relations:page' %}" 
+                       {% if 'relations' in request.resolver_match.namespace %}class="active"{% endif %}>
+                        <i class="fas fa-users"></i> 
+                        <span class="nav-text">Relations</span>
+                        {% if notifications_non_lues > 0 %}
+                            <span class="notification-badge">{{ notifications_non_lues }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'messagerie:conversations' %}" 
+                       {% if 'messagerie' in request.resolver_match.namespace %}class="active"{% endif %}>
+                        <i class="fas fa-comments"></i> 
+                        <span class="nav-text">Messages</span>
+                        {% if total_unread > 0 %}
+                            <span class="notification-badge">{{ total_unread }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- Menu utilisateur -->
+            <div class="user-menu">
+                <button class="user-menu-toggle" onclick="toggleUserMenu()">
+                    <div class="user-avatar">
+                        {% if user.is_authenticated and user.etudiant.photo %}
+                            <img src="{{ user.etudiant.photo.url }}" alt="Avatar">
+                        {% elif user.is_authenticated %}
+                            {{ user.etudiant.prenom|first }}{{ user.etudiant.nom|first }}
+                        {% else %}
+                            <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                    <i class="fas fa-chevron-down" style="font-size: 0.8rem; margin-left: 0.25rem;"></i>
+                </button>
+                
+                <div class="user-menu-dropdown" id="userMenuDropdown">
+                    {% if user.is_authenticated %}
+                        <div class="user-menu-header">
+                            <div class="user-menu-info">
+                                <h4>{{ user.etudiant.get_full_name }}</h4>
+                                <p>{{ user.email }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="user-menu-body">
+                            <a href="{% url 'accounts:profile' %}" class="user-menu-item">
+                                <i class="fas fa-user"></i>
+                                <span>Mon profil</span>
+                            </a>
+                            
+                            <a href="{% url 'accounts:edit_profile' %}" class="user-menu-item">
+                                <i class="fas fa-edit"></i>
+                                <span>Modifier le profil</span>
+                            </a>
+                            
+                            <div class="user-menu-divider"></div>
+                            
+                            <a href="{% url 'relations:statistiques' %}" class="user-menu-item">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Statistiques</span>
+                            </a>
+                            
+                            <a href="{% url 'relations:notifications' %}" class="user-menu-item">
+                                <i class="fas fa-bell"></i>
+                                <span>Notifications</span>
+                                {% if notifications_non_lues > 0 %}
+                                    <span class="notification-badge" style="margin-left: auto;">{{ notifications_non_lues }}</span>
+                                {% endif %}
+                            </a>
+                            
+                            <div class="user-menu-divider"></div>
+                            
+                            <a href="{% url 'accounts:change_password' %}" class="user-menu-item">
+                                <i class="fas fa-lock"></i>
+                                <span>Changer le mot de passe</span>
+                            </a>
+                            
+                            <button onclick="toggleTheme()" class="user-menu-item">
+                                <i class="fas fa-moon" id="themeIcon"></i>
+                                <span>Mode sombre</span>
+                            </button>
+                            
+                            <div class="user-menu-divider"></div>
+                            
+                            <a href="{% url 'accounts:logout' %}" class="user-menu-item danger">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Se déconnecter</span>
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="user-menu-body">
+                            <a href="{% url 'accounts:login' %}" class="user-menu-item">
+                                <i class="fas fa-sign-in-alt"></i>
+                                <span>Se connecter</span>
+                            </a>
+                            
+                            <a href="{% url 'accounts:register' %}" class="user-menu-item">
+                                <i class="fas fa-user-plus"></i>
+                                <span>S'inscrire</span>
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Overlay pour fermer le menu -->
+    <div class="menu-overlay" id="menuOverlay" onclick="closeUserMenu()"></div>
+
+    <!-- Messages/Toasts -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="toast toast-{{ message.tags }} animate__animated animate__fadeInRight">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        // Configuration CSRF
+        const csrfToken = '{{ csrf_token }}';
+        
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", csrfToken);
+                }
+            }
+        });
+
+        // Variables globales
+        let isMobile = window.innerWidth <= 768;
+        let userMenuOpen = false;
+
+        // Gestion du menu utilisateur
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userMenuDropdown');
+            const overlay = document.getElementById('menuOverlay');
+            
+            if (userMenuOpen) {
+                closeUserMenu();
+            } else {
+                dropdown.classList.add('active');
+                overlay.classList.add('active');
+                userMenuOpen = true;
+            }
+        }
+
+        function closeUserMenu() {
+            const dropdown = document.getElementById('userMenuDropdown');
+            const overlay = document.getElementById('menuOverlay');
+            
+            dropdown.classList.remove('active');
+            overlay.classList.remove('active');
+            userMenuOpen = false;
+        }
+
+        // Fermer le menu en cliquant en dehors
+        document.addEventListener('click', function(event) {
+            const userMenu = document.querySelector('.user-menu');
+            if (!userMenu.contains(event.target) && userMenuOpen) {
+                closeUserMenu();
+            }
+        });
+
+        // Gestion du thème sombre (optionnel)
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (body.classList.contains('dark-theme')) {
+                body.classList.remove('dark-theme');
+                themeIcon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'light');
+                showToast('Mode clair activé', 'info');
+            } else {
+                body.classList.add('dark-theme');
+                themeIcon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'dark');
+                showToast('Mode sombre activé', 'info');
+            }
+        }
+
+        // Charger le thème sauvegardé
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-theme');
+                if (themeIcon) themeIcon.className = 'fas fa-sun';
+            }
+        });
+
+        // Détecter les changements de taille d'écran
+        window.addEventListener('resize', function() {
+            const wasMobile = isMobile;
+            isMobile = window.innerWidth <= 768;
+            
+            if (wasMobile !== isMobile && userMenuOpen) {
+                closeUserMenu();
+            }
+        });
+
+        // Masquer les toasts automatiquement
+        setTimeout(() => {
+            $('.toast').fadeOut();
+        }, 5000);
+
+        // Fonction utilitaire pour afficher les toasts
+        function showToast(message, type = 'info') {
+            const toast = $(`<div class="toast toast-${type} animate__animated animate__fadeInRight">${message}</div>`);
+            $('body').append(toast);
+            setTimeout(() => toast.fadeOut(() => toast.remove()), 5000);
+        }
+
+        // Gestion du clavier (ESC pour fermer le menu)
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && userMenuOpen) {
+                closeUserMenu();
+            }
+        });
+
+        // Optimisations pour mobile
+        if (isMobile) {
+            // Désactiver le zoom sur les inputs
+            $('input, textarea').attr('autocomplete', 'off');
+            
+            // Gérer l'orientation
+            window.addEventListener('orientationchange', function() {
+                setTimeout(() => {
+                    if (userMenuOpen) closeUserMenu();
+                }, 100);
+            });
+        }
+
+        // Animation des cartes au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,416 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Inscription - Profil étudiant - AESConnect {% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card animate-slide-in">
+            <div class="card-body p-5">
+                <!-- Progress -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-success rounded-pill px-3 py-2">Étape 2/2</span>
+                        <small class="text-muted">Profil étudiant</small>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: 100%"></div>
+                    </div>
+                </div>
+
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <div class="mb-3">
+                        <i class="bi bi-mortarboard-fill icon-gradient" style="font-size: 3rem;"></i>
+                    </div>
+                    <h2 class="fw-bold mb-2">Complétez votre profil</h2>
+                    <p class="text-muted">Quelques informations pour créer votre profil étudiant</p>
+                    {% if user_email %}
+                        <div class="badge bg-light text-dark px-3 py-2">
+                            <i class="bi bi-envelope me-1"></i>{{ user_email }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Form -->
+                <form method="post" enctype="multipart/form-data" id="profileForm">
+                    {% csrf_token %}
+                    
+                    <!-- Identité -->
+                    <div class="mb-5">
+                        <h5 class="border-bottom pb-2 mb-4">
+                            <i class="bi bi-person-badge me-2"></i>Informations personnelles
+                        </h5>
+
+                        <div class="row">
+                            <!-- INE -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.ine.id_for_label }}" class="form-label">
+                                    {{ form.ine.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.ine }}
+                                {% if form.ine.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        {{ form.ine.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Nom -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.nom.id_for_label }}" class="form-label">
+                                    {{ form.nom.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.nom }}
+                                {% if form.nom.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        {{ form.nom.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Prénom -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.prenom.id_for_label }}" class="form-label">
+                                    {{ form.prenom.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.prenom }}
+                                {% if form.prenom.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        {{ form.prenom.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Téléphone -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.telephone.id_for_label }}" class="form-label">
+                                    {{ form.telephone.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.telephone }}
+                                <div class="form-text">Format: +226 XX XX XX XX</div>
+                                {% if form.telephone.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        {{ form.telephone.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Date de naissance -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.date_naissance.id_for_label }}" class="form-label">
+                                    {{ form.date_naissance.label }}
+                                </label>
+                                {{ form.date_naissance }}
+                                {% if form.date_naissance.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        {{ form.date_naissance.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Genre -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.genre.id_for_label }}" class="form-label">
+                                    {{ form.genre.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.genre }}
+                                {% if form.genre.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        {{ form.genre.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Ville -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.ville.id_for_label }}" class="form-label">
+                                    {{ form.ville.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.ville }}
+                                {% if form.ville.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        {{ form.ville.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Académique -->
+                    <div class="mb-5">
+                        <h5 class="border-bottom pb-2 mb-4">
+                            <i class="bi bi-building me-2"></i>Informations académiques
+                        </h5>
+
+                        <div class="row">
+                            <!-- Université -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.universite.id_for_label }}" class="form-label">
+                                    {{ form.universite.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.universite }}
+                                {% if form.universite.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        {{ form.universite.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Filière -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.filiere.id_for_label }}" class="form-label">
+                                    {{ form.filiere.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.filiere }}
+                                <div id="filiereLoader" style="display: none;">
+                                    <small class="text-muted">
+                                        <span class="spinner me-1"></span>
+                                        Chargement des filières...
+                                    </small>
+                                </div>
+                                {% if form.filiere.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        {{ form.filiere.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Année universitaire -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.annee_universitaire.id_for_label }}" class="form-label">
+                                    {{ form.annee_universitaire.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.annee_universitaire }}
+                                {% if form.annee_universitaire.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        {{ form.annee_universitaire.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documents -->
+                    <div class="mb-5">
+                        <h5 class="border-bottom pb-2 mb-4">
+                            <i class="bi bi-file-earmark-text me-2"></i>Documents et photo
+                        </h5>
+
+                        <div class="row">
+                            <!-- Attestation -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.attestation_inscription.id_for_label }}" class="form-label">
+                                    {{ form.attestation_inscription.label }}
+                                </label>
+                                {{ form.attestation_inscription }}
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    PDF, JPG, PNG (max 5MB)
+                                </div>
+                                {% if form.attestation_inscription.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        {{ form.attestation_inscription.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Photo -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.photo.id_for_label }}" class="form-label">
+                                    {{ form.photo.label }}
+                                </label>
+                                {{ form.photo }}
+                                <div class="form-text">
+                                    <i class="bi bi-camera me-1"></i>
+                                    Photo pour personnaliser votre profil
+                                </div>
+                                {% if form.photo.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        {{ form.photo.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Erreurs générales -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            {{ form.non_field_errors|join:", " }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Boutons -->
+                    <div class="d-flex gap-3 justify-content-between">
+                        <a href="{% url 'accounts:register' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            Retour
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg px-4" id="submitBtn">
+                            <i class="bi bi-check-circle me-2"></i>
+                            Créer mon compte
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const universiteSelect = document.querySelector('#id_universite');
+    const filiereSelect = document.querySelector('#id_filiere');
+    const filiereLoader = document.getElementById('filiereLoader');
+    const profileForm = document.getElementById('profileForm');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Université change handler
+    if (universiteSelect && filiereSelect) {
+        universiteSelect.addEventListener('change', function() {
+            const universiteId = this.value;
+            
+            filiereLoader.style.display = 'block';
+            filiereSelect.disabled = true;
+            filiereSelect.innerHTML = '<option>Chargement...</option>';
+
+            if (universiteId) {
+                makeAjaxRequest("{% url 'accounts:get_filieres' %}?universite=" + universiteId)
+                    .then(response => response.json())
+                    .then(data => {
+                        filiereSelect.innerHTML = '<option value="">Sélectionnez une filière</option>';
+                        data.forEach(filiere => {
+                            const option = new Option(filiere.nom, filiere.id);
+                            filiereSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        filiereSelect.innerHTML = '<option value="">Erreur de chargement</option>';
+                        showToast('Erreur lors du chargement des filières', 'error');
+                    })
+                    .finally(() => {
+                        filiereSelect.disabled = false;
+                        filiereLoader.style.display = 'none';
+                    });
+            } else {
+                filiereSelect.innerHTML = '<option value="">Sélectionnez d\'abord une université</option>';
+                filiereSelect.disabled = false;
+                filiereLoader.style.display = 'none';
+            }
+        });
+    }
+
+    // Form validation and submission
+    if (profileForm && submitBtn) {
+        profileForm.addEventListener('submit', function(e) {
+            let isValid = true;
+            const requiredFields = ['ine', 'nom', 'prenom', 'telephone', 'genre', 'ville', 'universite', 'filiere', 'annee_universitaire'];
+            
+            requiredFields.forEach(fieldName => {
+                const field = document.querySelector(`#id_${fieldName}`);
+                if (field && !field.value.trim()) {
+                    isValid = false;
+                    field.classList.add('is-invalid');
+                } else if (field) {
+                    field.classList.remove('is-invalid');
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+                showToast('Veuillez remplir tous les champs obligatoires', 'warning');
+                return;
+            }
+
+            setLoadingState(submitBtn, true);
+        });
+    }
+
+    // Real-time validation
+    document.querySelectorAll('input[required], select[required]').forEach(field => {
+        field.addEventListener('blur', function() {
+            if (!this.value.trim()) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+
+        field.addEventListener('input', function() {
+            if (this.classList.contains('is-invalid') && this.value.trim()) {
+                this.classList.remove('is-invalid');
+            }
+        });
+    });
+
+    // File upload previews
+    ['attestation_inscription', 'photo'].forEach(fieldName => {
+        const fileInput = document.querySelector(`#id_${fieldName}`);
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Validation
+                    if (fieldName === 'photo' && !file.type.startsWith('image/')) {
+                        showToast('Veuillez sélectionner une image valide', 'error');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    if (file.size > 5 * 1024 * 1024) {
+                        showToast('La taille ne peut pas dépasser 5MB', 'error');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    const fileName = file.name;
+                    const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                    
+                    // Create preview
+                    const preview = document.createElement('div');
+                    preview.className = 'mt-2 p-2 rounded-3 file-preview';
+                    preview.style.background = 'rgba(16, 185, 129, 0.1)';
+                    preview.innerHTML = `
+                        <small style="color: var(--accent-color);">
+                            <i class="bi bi-check-circle me-1"></i>
+                            ${fileName} (${fileSize} MB)
+                        </small>
+                    `;
+                    
+                    // Remove old preview
+                    const oldPreview = this.parentNode.querySelector('.file-preview');
+                    if (oldPreview) {
+                        oldPreview.remove();
+                    }
+                    
+                    this.parentNode.appendChild(preview);
+                }
+            });
+        }
+    });
+
+    // Auto-focus first field
+    const firstField = document.querySelector('#id_ine');
+    if (firstField) {
+        firstField.focus();
+    }
+});
+</script>
+{% endblock %}

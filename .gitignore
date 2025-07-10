@@ -1,0 +1,37 @@
+# Environnement virtuel
+venv/
+.env
+*.env
+
+env/
+.env
+*.env
+
+# Base de données SQLite
+db.sqlite3
+
+# Fichiers de migration
+**/migrations/
+**/migrations/*.py
+**/migrations/*.pyc
+
+# Fichiers de cache Python
+__pycache__/
+*.py[cod]
+*.log
+
+# Dossiers temporaires
+*.sqlite3
+*.pot
+*.pyc
+.DS_Store
+
+# Dossier des médias (uploads fichiers utilisateur)
+media/
+
+# VS Code
+.vscode/
+
+# Media files and static files
+# media/
+# static/

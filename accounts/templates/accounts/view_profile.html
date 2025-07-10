@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">Profil de {{ etudiant.prenom }} {{ etudiant.nom }}</h3>
+                    {% if not is_own_profile %}
+                        <a href="{% url 'relations:page' %}" class="btn btn-light btn-sm">Retour</a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <img src="{% if etudiant.photo %}{{ etudiant.photo.url }}{% else %}{% static 'img/default-avatar.png' %}{% endif %}"
+                             alt="Photo de profil"
+                             class="rounded-circle"
+                             style="width: 150px; height: 150px; object-fit: cover;">
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h5>Informations personnelles</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Nom complet:</strong> {{ etudiant.prenom }} {{ etudiant.nom }}</li>
+                                <li><strong>Email:</strong> {{ etudiant.utilisateur.email }}</li>
+                                {% if etudiant.date_naissance %}
+                                    <li><strong>Date de naissance:</strong> {{ etudiant.date_naissance }}</li>
+                                {% endif %}
+                                <li><strong>Genre:</strong> {{ etudiant.get_genre_display }}</li>
+                                <li><strong>Ville:</strong> {{ etudiant.ville }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Informations académiques</h5>
+                            <ul class="list-unstyled">
+                                {% if etudiant.universite %}
+                                    <li><strong>Université:</strong> {{ etudiant.universite }}</li>
+                                {% endif %}
+                                {% if etudiant.filiere %}
+                                    <li><strong>Filière:</strong> {{ etudiant.filiere }}</li>
+                                {% endif %}
+                                <li><strong>Année universitaire:</strong> {{ etudiant.annee_universitaire }}</li>
+                                <li><strong>Nombre d'amis:</strong> {{ nombre_amis }}</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    {% if etudiant.situation %}
+                        <div class="mb-3">
+                            <h5>Situation actuelle</h5>
+                            <p>{{ etudiant.situation }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
